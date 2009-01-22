@@ -1,0 +1,3 @@
+io/sio_Error.lo: io/sio_Error.cpp ../sdts++/io/sio_Error.h
+
+../sdts++/io/sio_Error.h:
