@@ -259,7 +259,13 @@ fillScField_( sio_8211Field const &       dr_field,
   field_data += field_data_pos;
 
   const long   field_data_length = dr_field.getDataLength();
-        
+
+  //laharplot: We make a string out of the iterator to fix a datatype problem calling makeFixedSubfield
+  string field_data_str(field_data_length, ' ');
+  vector<char>::const_iterator altIter = field_data;
+  for(long dataStrPos = 0; altIter != dr_field.getData().end(); dataStrPos++,altIter++)
+	  field_data_str[dataStrPos] = *altIter;
+
 
   sc_field.setMnemonic( field_format.getTag() );
   sc_field.setName( field_format.getName() );
@@ -316,13 +322,15 @@ fillScField_( sio_8211Field const &       dr_field,
             case sio_8211SubfieldFormat::fixed : 
               chunk_size =
                 (*subfield_format_itr).getConverter()->makeFixedSubfield( *sc_subfield_itr,
-                                                                          field_data, 
+                                                                          //field_data, //laharplot: switched this line for the new one below it -- now providing a char[] instead of an iterator
+																		  field_data_str.c_str(),
                                                                           static_cast<long int>((*subfield_format_itr).getLength()) );
               break;
             case sio_8211SubfieldFormat::variable :
               chunk_size =
                 (*subfield_format_itr).getConverter()->makeVarSubfield( *sc_subfield_itr,
-                                                                        field_data, 
+                                                                        //field_data, //laharplot: switched this line for the new one below it -- now providing a char[] instead of an iterator
+																		field_data_str.c_str(),
                                                                         static_cast<long int>(field_data_length - field_data_pos),
                                                                         (*subfield_format_itr).getDelimiter() );
               field_data++;             // skip unit terminator
