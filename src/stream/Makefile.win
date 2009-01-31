@@ -1,0 +1,2 @@
+all: main.cpp	
+	g++ -o stream -Ic:/lib/sdts++/include -IC:/lib/boost/boost_1_36_0 -Lc:/lib/sdts++/lib -Lc:/lib/boost/boost_1_36_0/lib -lboost_filesystem-vc90-mt-1_36 -lsdts++ -lsysutils main.cpp Dem.cpp
