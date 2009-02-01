@@ -21,6 +21,8 @@
 #include <sdts++/io/sio_Utils.h>
 #include <boost/filesystem.hpp>
 
+using namespace std;
+
 class Dem
 {
 	public:

@@ -1,2 +1,2 @@
 all: main.cpp	
-	g++ -o stream -Ic:/lib/sdts++/include -IC:/lib/boost/boost_1_36_0 -Lc:/lib/sdts++/lib -Lc:/lib/boost/boost_1_36_0/lib -lboost_filesystem-vc90-mt-1_36 -lsdts++ -lsysutils main.cpp Dem.cpp
+	g++ main.cpp Dem.cpp --static -o stream.exe -Ic:/lib/sdts++/include -IC:/lib/boost/boost_1_37_0 -Lc:/lib/sdts++/lib -lsdts++ -lsysutils "C:/lib/boost/boost_1_37_0/libs/filesystem/build/gcc-mingw-3.4.5/release/link-static/threading-multi/libboost_filesystem-mgw34-mt-1_37.lib" "C:/lib/boost/boost_1_37_0/libs/system/build/gcc-mingw-3.4.5/release/link-static/threading-multi/libboost_system-mgw34-mt-1_37.lib"
