@@ -1,2 +1,2 @@
 all: main.cpp	
-	g++ main.cpp Dem.cpp -o stream --static -I/major/aeheathc/lib/sdts/include -L/major/aeheathc/lib/sdts/lib -L/major/aeheathc/lib/boost/libs -lsdts++ -lsysutils -lboost_filesystem-mt-s
+	g++ main.cpp -o stream --static -I/major/aeheathc/lib/gdal -L/major/aeheathc/lib/gdal/lib -lgdal -lboost_filesystem-mgw34-mt-1_37 -lboost_system-mgw34-mt-1_37
