@@ -1,3 +1,0 @@
-io/sio_8211Utils.lo: io/sio_8211Utils.cpp ../sdts++/io/sio_8211Utils.h
-
-../sdts++/io/sio_8211Utils.h:
