@@ -18,7 +18,7 @@
 */
 
 #include <iostream>
-#include <gdal/gdal_priv.h>
+#include <gdal_priv.h>
 
 
 using namespace std;
