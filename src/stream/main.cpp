@@ -115,67 +115,60 @@ int main(int argc, char* argv[])
 		return 1;
 	}
 
-	double	adfGeoTransform[6], origin_x, origin_y;
+	double	adfGeoTransform[6], origin_x = -1, origin_y = -1, physicalSize = -1;
 	int		cellsX = poDataset->GetRasterXSize(),
 			cellsY = poDataset->GetRasterYSize(),
 			layers = poDataset->GetRasterCount(),
-			physicalSize,zone;
+			zone = -1;
 
-    if( poDataset->GetProjectionRef()  != NULL )
-        printf( "Projection is `%s'\n", poDataset->GetProjectionRef() );
-
-    if( poDataset->GetGeoTransform( adfGeoTransform ) == CE_None )
-    {
-        printf( "Origin = (%.6f,%.6f)\n",
-                adfGeoTransform[0], adfGeoTransform[3] );
-
-        printf( "Pixel Size = (%.6f,%.6f)\n",
-                adfGeoTransform[1], adfGeoTransform[5] );
+    if(poDataset->GetProjectionRef() != NULL)
+	{
+		string projection = poDataset->GetProjectionRef();
+		string::size_type zoneStart = projection.find("UTM Zone ");
+		if(zoneStart != string::npos)
+		{
+			istringstream projZone(projection.substr(zoneStart+9,projection.
+				find(",",zoneStart+9)-(zoneStart+10)));
+			projZone >> zone;
+		}
 	}
 
-	        GDALRasterBand  *poBand;
-        int             nBlockXSize, nBlockYSize;
-        int             bGotMin, bGotMax;
-        double          adfMinMax[2];
-        
-        poBand = poDataset->GetRasterBand( 1 );
-        poBand->GetBlockSize( &nBlockXSize, &nBlockYSize );
-        printf( "Block=%dx%d Type=%s, ColorInterp=%s\n",
-                nBlockXSize, nBlockYSize,
-                GDALGetDataTypeName(poBand->GetRasterDataType()),
-                GDALGetColorInterpretationName(
-                    poBand->GetColorInterpretation()) );
+    if(poDataset->GetGeoTransform( adfGeoTransform ) == CE_None)
+    {
+		origin_x = adfGeoTransform[0];
+		origin_y = adfGeoTransform[3];
+		physicalSize = adfGeoTransform[1];
+		//above size is X-size. Y-size is in adfGeoTransform[5]
+	}
 
-        adfMinMax[0] = poBand->GetMinimum( &bGotMin );
-        adfMinMax[1] = poBand->GetMaximum( &bGotMax );
-        if( ! (bGotMin && bGotMax) )
-            GDALComputeRasterMinMax((GDALRasterBandH)poBand, TRUE, adfMinMax);
-
-        printf( "Min=%.3fd, Max=%.3f\n", adfMinMax[0], adfMinMax[1] );
-        
-        if( poBand->GetOverviewCount() > 0 )
-            printf( "Band has %d overviews.\n", poBand->GetOverviewCount() );
-
-        if( poBand->GetColorTable() != NULL )
-            printf( "Band has a color table with %d entries.\n", 
-                     poBand->GetColorTable()->GetColorEntryCount() );
-
-
-		float *pafScanline;
-        int   nXSize = poBand->GetXSize(), nYSize = poBand->GetYSize();
-        pafScanline = (float *) CPLMalloc(sizeof(float)*nXSize*nYSize);
-        poBand->RasterIO( GF_Read, 0, 0, nXSize, nYSize, pafScanline, nXSize, nYSize, GDT_Float32, 0, 0 );
-
-		/*for(int yp = 0; yp<nYSize; yp++)
-		{
-			for(int xp = 0; xp<nXSize; xp++)
-				cout << pafScanline[yp * nXSize + xp] << ",\t";
-			cout << endl;
-		}*/			  
-					  
-					  
-					  
-					  
+	GDALRasterBand  *poBand;
+	int             nBlockXSize, nBlockYSize;
+	int             bGotMin, bGotMax;
+	double          adfMinMax[2];
+	string			demDT;
+	poBand = poDataset->GetRasterBand(1);
+	poBand->GetBlockSize( &nBlockXSize, &nBlockYSize );
+	demDT = poBand->GetRasterDataType();
+	adfMinMax[0] = poBand->GetMinimum( &bGotMin );
+	adfMinMax[1] = poBand->GetMaximum( &bGotMax );
+	if(!(bGotMin && bGotMax))
+		GDALComputeRasterMinMax((GDALRasterBandH)poBand, TRUE, adfMinMax);
+	float *pafScanline;
+	int   nXSize = poBand->GetXSize(), nYSize = poBand->GetYSize();
+	pafScanline = (float *) CPLMalloc(sizeof(float)*nXSize*nYSize);
+	poBand->RasterIO( GF_Read, 0, 0, nXSize, nYSize, pafScanline, nXSize, nYSize, GDT_Float32, 0, 0 );
 	GDALClose((GDALDatasetH*)poDataset);
+
+	/*for(int yp = 0; yp<nYSize; yp++)
+	{
+		for(int xp = 0; xp<nXSize; xp++)
+			cout << pafScanline[yp * nXSize + xp] << ",\t";
+		cout << endl;
+	}*/			  
+					  
+	//Done reading DEM, now make a flow direction grid and fill sinkholes if necessary.
+					  
+					  
+
 	return 0;
 }
