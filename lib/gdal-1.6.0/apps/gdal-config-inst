@@ -1,12 +1,12 @@
 #!/bin/sh
-CONFIG_LIBS="-Lc:/lib/gdal/lib -lgdal"
-CONFIG_DEP_LIBS="        "
-CONFIG_PREFIX="c:/lib/gdal"
-CONFIG_CFLAGS="-Ic:/lib/gdal/include"
-CONFIG_DATA="c:/lib/gdal/share/gdal"
+CONFIG_LIBS="/major/aeheathc/lib/gdal/lib/libgdal.a  -I/usr/include -lsqlite3 -lodbc -lodbcinst -L/usr/lib -lexpat -lgif -ljpeg -lpng -lpthread -lm -lrt -ldl    -lcurl     "
+CONFIG_DEP_LIBS=" -I/usr/include -lsqlite3 -lodbc -lodbcinst -L/usr/lib -lexpat -lgif -ljpeg -lpng -lpthread -lm -lrt -ldl    -lcurl     "
+CONFIG_PREFIX="/major/aeheathc/lib/gdal"
+CONFIG_CFLAGS="-I/major/aeheathc/lib/gdal/include"
+CONFIG_DATA="/major/aeheathc/lib/gdal/share/gdal"
 CONFIG_VERSION="1.6.0"
 CONFIG_OGR_ENABLED=yes
-CONFIG_FORMATS="gxf gtiff hfa aigrid aaigrid ceos ceos2 iso8211 xpm sdts raw dted mem jdem envisat elas fit vrt usgsdem l1b nitf bmp pcidsk airsar rs2 ilwis rmf leveller sgi srtmhgt idrisi gsg ingr ers jaxapalsar dimap gff cosar pds adrg coasp tsx terragen blx msgn grib bsb gif jpeg png pcraster zlib  rik"
+CONFIG_FORMATS="gxf gtiff hfa aigrid aaigrid ceos ceos2 iso8211 xpm sdts raw dted mem jdem envisat elas fit vrt usgsdem l1b nitf bmp pcidsk airsar rs2 ilwis rmf leveller sgi srtmhgt idrisi gsg ingr ers jaxapalsar dimap gff cosar pds adrg coasp tsx terragen blx msgn wcs wms gif jpeg png zlib  rik"
 usage()
 {
 	cat <<EOF

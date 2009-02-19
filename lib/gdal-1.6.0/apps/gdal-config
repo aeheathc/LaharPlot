@@ -1,12 +1,12 @@
 #!/bin/sh
-CONFIG_LIBS="/d/Download/gdal-1.6.0/gdal-1.6.0/libgdal.la"
-CONFIG_DEP_LIBS="        "
-CONFIG_PREFIX="/d/Download/gdal-1.6.0/gdal-1.6.0"
-CONFIG_CFLAGS="-I/d/Download/gdal-1.6.0/gdal-1.6.0/port -I/d/Download/gdal-1.6.0/gdal-1.6.0/gcore -I/d/Download/gdal-1.6.0/gdal-1.6.0/alg -I/d/Download/gdal-1.6.0/gdal-1.6.0/ogr -I/d/Download/gdal-1.6.0/gdal-1.6.0/ogr/ogrsf_frmts"
-CONFIG_DATA="/d/Download/gdal-1.6.0/gdal-1.6.0/data"
+CONFIG_LIBS="/major/aeheathc/LaharPlot/lib/gdal-1.6.0/libgdal.a    -I/usr/include -lsqlite3 -lodbc -lodbcinst -L/usr/lib -lexpat -lgif -ljpeg -lpng -lpthread -lm -lrt -ldl    -lcurl     "
+CONFIG_DEP_LIBS=" -I/usr/include -lsqlite3 -lodbc -lodbcinst -L/usr/lib -lexpat -lgif -ljpeg -lpng -lpthread -lm -lrt -ldl    -lcurl     "
+CONFIG_PREFIX="/major/aeheathc/LaharPlot/lib/gdal-1.6.0"
+CONFIG_CFLAGS="-I/major/aeheathc/LaharPlot/lib/gdal-1.6.0/port -I/major/aeheathc/LaharPlot/lib/gdal-1.6.0/gcore -I/major/aeheathc/LaharPlot/lib/gdal-1.6.0/alg -I/major/aeheathc/LaharPlot/lib/gdal-1.6.0/ogr -I/major/aeheathc/LaharPlot/lib/gdal-1.6.0/ogr/ogrsf_frmts"
+CONFIG_DATA="/major/aeheathc/LaharPlot/lib/gdal-1.6.0/data"
 CONFIG_VERSION="1.6.0"
 CONFIG_OGR_ENABLED=yes
-CONFIG_FORMATS="gxf gtiff hfa aigrid aaigrid ceos ceos2 iso8211 xpm sdts raw dted mem jdem envisat elas fit vrt usgsdem l1b nitf bmp pcidsk airsar rs2 ilwis rmf leveller sgi srtmhgt idrisi gsg ingr ers jaxapalsar dimap gff cosar pds adrg coasp tsx terragen blx msgn grib bsb gif jpeg png pcraster zlib  rik"
+CONFIG_FORMATS="gxf gtiff hfa aigrid aaigrid ceos ceos2 iso8211 xpm sdts raw dted mem jdem envisat elas fit vrt usgsdem l1b nitf bmp pcidsk airsar rs2 ilwis rmf leveller sgi srtmhgt idrisi gsg ingr ers jaxapalsar dimap gff cosar pds adrg coasp tsx terragen blx msgn wcs wms gif jpeg png zlib  rik"
 usage()
 {
 	cat <<EOF

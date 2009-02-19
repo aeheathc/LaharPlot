@@ -3,13 +3,13 @@ WEB_DIR		= $(HOME)/www/gdal
 
 include GDALmake.opt
 
-GDAL_OBJ	=	./frmts/o/*.o \
-			./gcore/*.o \
-			./port/*.o \
-			./alg/*.o
+GDAL_OBJ	=	$(GDAL_ROOT)/frmts/o/*.o \
+			$(GDAL_ROOT)/gcore/*.o \
+			$(GDAL_ROOT)/port/*.o \
+			$(GDAL_ROOT)/alg/*.o
 
 ifeq ($(OGR_ENABLED),yes)
-GDAL_OBJ += ./ogr/ogrsf_frmts/o/*.o
+GDAL_OBJ += $(GDAL_ROOT)/ogr/ogrsf_frmts/o/*.o
 endif
 
 include ./ogr/file.lst

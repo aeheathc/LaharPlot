@@ -2,10 +2,10 @@
 /* port/cpl_config.h.in.  Generated from configure.in by autoheader.  */
 
 /* Define if you want to use pthreads based multiprocessing support */
-/* #undef CPL_MULTIPROC_PTHREAD */
+#define CPL_MULTIPROC_PTHREAD 1
 
 /* --prefix directory for GDAL install */
-#define GDAL_PREFIX "c:/lib/gdal"
+#define GDAL_PREFIX "/major/aeheathc/lib/gdal"
 
 /* Define to 1 if you have the <assert.h> header file. */
 #define HAVE_ASSERT_H 1
@@ -21,13 +21,13 @@
 
 /* Define to 1 if you have the declaration of `strtof', and to 0 if you don't.
    */
-#define HAVE_DECL_STRTOF 1
+#define HAVE_DECL_STRTOF 0
 
 /* Define to 1 if you have the <direct.h> header file. */
-#define HAVE_DIRECT_H 1
+/* #undef HAVE_DIRECT_H */
 
 /* Define to 1 if you have the <dlfcn.h> header file. */
-/* #undef HAVE_DLFCN_H */
+#define HAVE_DLFCN_H 1
 
 /* Define to 1 if you don't have `vprintf' but do have `_doprnt.' */
 /* #undef HAVE_DOPRNT */
@@ -61,19 +61,19 @@
 #define HAVE_INTTYPES_H 1
 
 /* Define to 1 if you have the <jpeglib.h> header file. */
-/* #undef HAVE_JPEGLIB_H */
+#define HAVE_JPEGLIB_H 1
 
 /* Define to 1 if you have the `dl' library (-ldl). */
-/* #undef HAVE_LIBDL */
+#define HAVE_LIBDL 1
 
 /* Define to 1 if you have the `m' library (-lm). */
-/* #undef HAVE_LIBM */
+#define HAVE_LIBM 1
 
 /* Define to 1 if you have the `pq' library (-lpq). */
 /* #undef HAVE_LIBPQ */
 
 /* Define to 1 if you have the `rt' library (-lrt). */
-/* #undef HAVE_LIBRT */
+#define HAVE_LIBRT 1
 
 /* Define to 1 if you have the <limits.h> header file. */
 #define HAVE_LIMITS_H 1
@@ -88,7 +88,7 @@
 #define HAVE_MEMORY_H 1
 
 /* Define to 1 if you have the <png.h> header file. */
-/* #undef HAVE_PNG_H */
+#define HAVE_PNG_H 1
 
 /* Define to 1 if you have the `snprintf' function. */
 #define HAVE_SNPRINTF 1
@@ -155,7 +155,7 @@
 #define UNIX_STDIO_64 1
 
 /* Define to 1 if you want to use the -fvisibility GCC flag */
-/* #undef USE_GCC_VISIBILITY_FLAG */
+#define USE_GCC_VISIBILITY_FLAG 1
 
 /* Define to name of 64bit fopen function */
 #define VSI_FOPEN64 fopen64
@@ -173,10 +173,10 @@
 /* #undef VSI_NEED_LARGEFILE64_SOURCE */
 
 /* Define to name of 64bit stat function */
-#define VSI_STAT64 stat
+#define VSI_STAT64 stat64
 
 /* Define to name of 64bit stat structure */
-#define VSI_STAT64_T stat
+#define VSI_STAT64_T stat64
 
 /* Define to 1 if your processor stores words with the most significant byte
    first (like Motorola and SPARC, unlike Intel and VAX). */

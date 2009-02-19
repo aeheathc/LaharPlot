@@ -1,10 +1,10 @@
-GDAL_ROOT	=	/d/Download/gdal-1.6.0/gdal-1.6.0
+GDAL_ROOT	=	/major/aeheathc/LaharPlot/lib/gdal-1.6.0
 top_builddir	=	$(GDAL_ROOT)
 
 #
 # the library can be built by the native build or with the help of libtool
 #
-HAVE_LIBTOOL	=	yes
+HAVE_LIBTOOL	=	no
 LIBTOOL	=	$(SHELL) $(top_builddir)/libtool
 ifeq ($(HAVE_LIBTOOL),yes)
 LIBTOOL_COMPILE_CC =	$(LIBTOOL) --mode=compile --tag=CC
@@ -14,7 +14,7 @@ LIBTOOL_INSTALL	=	$(LIBTOOL) --mode=install
 LIBTOOL_FINISH	=	$(LIBTOOL) --mode=finish --silent
 LIBTOOL_CLEAN	=	$(LIBTOOL) --mode=clean
 else
-LIBTOOL_FINISH	=	/usr/bin/true
+LIBTOOL_FINISH	=	/bin/true
 endif
 
 CC	=	$(LIBTOOL_COMPILE_CC) gcc
@@ -28,7 +28,7 @@ INSTALL_DIR	= 	$(GDAL_ROOT)/install-sh -d
 
 # SDE_LIB needs to be first because it embeds zlib.  We need to use its symbols instead of -lz's
 
-LIBS	=	$(SDE_LIB)   $(KAK_LIBS) $(DWG_LIBS) $(CURL_LIB) \
+LIBS	=	$(SDE_LIB) -I/usr/include -lsqlite3 -lodbc -lodbcinst -L/usr/lib -lexpat -lgif -ljpeg -lpng -lpthread -lm -lrt -ldl  $(KAK_LIBS) $(DWG_LIBS) $(CURL_LIB) \
 		$(MRSID_LIBS) $(INGRES_LIB)
 
 PYTHON_INCLUDES = 
@@ -50,7 +50,7 @@ OGR_ENABLED = yes
 OSX_FRAMEWORK_PREFIX = /Library/Frameworks/GDAL.framework
 OSX_VERSION_FRAMEWORK_PREFIX = ${OSX_FRAMEWORK_PREFIX}/Versions/1.6
 
-prefix		=	c:/lib/gdal
+prefix		=	/major/aeheathc/lib/gdal
 exec_prefix	=	${prefix}
 INST_PREFIX	=	${prefix}
 INST_INCLUDE	=	${prefix}/include
@@ -62,14 +62,14 @@ INST_DOCS	=	${prefix}/doc
 INST_MAN	=	${prefix}/share/gdal/man
 
 CPPFLAGS	=  -I$(GDAL_ROOT)/port 
-CFLAGS		= -g -O2  -Wall -Wdeclaration-after-statement $(USER_DEFS)
-CXXFLAGS	= -g -O2  -Wall $(USER_DEFS)
+CFLAGS		= -g -O2 -fPIC -fvisibility=hidden  -Wall -Wdeclaration-after-statement $(USER_DEFS)
+CXXFLAGS	= -g -O2 -fPIC -fvisibility=hidden  -Wall $(USER_DEFS)
 LDFLAGS     = 
 
 RANLIB		=	ranlib
-SO_EXT		=	dll
-LD_SHARED	=	
-EXE		=       .exe
+SO_EXT		=	so
+LD_SHARED	=	/bin/true
+EXE		=       
 
 ifeq ($(notdir $(LD_SHARED)),true)
 HAVE_LD_SHARED  =	no
@@ -148,8 +148,8 @@ endif
 #
 # SQLite 
 #
-SQLITE_INC = 
-HAVE_SQLITE = no
+SQLITE_INC = -L/usr/lib
+HAVE_SQLITE = yes
 
 #
 # JPEG2000 via Kakadu Support.
@@ -190,8 +190,8 @@ HAVE_NAS	= no
 #
 # Expat XML Parser for KML and GPX
 #
-HAVE_EXPAT = no
-EXPAT_INCLUDE = 
+HAVE_EXPAT = yes
+EXPAT_INCLUDE = -I/usr/include
 
 #
 # Oracle Spatial Support
@@ -221,8 +221,8 @@ SDE_INC =
 #
 # Curl
 #
-CURL_SETTING 	=	no
-CURL_LIB	=	
+CURL_SETTING 	=	yes
+CURL_LIB	=	-lcurl  
 CURL_INC	=	
 
 # 
@@ -273,22 +273,22 @@ FME_INCLUDE	=	-I/fmeobjects/cpp
 endif
 
 # PCRaster support
-PCRASTER_SETTING	=	internal
+PCRASTER_SETTING	=	no
 
 OGDI_INCLUDE	=	
 
-PNG_SETTING     =	internal
-JPEG_SETTING	=	internal
+PNG_SETTING     =	external
+JPEG_SETTING	=	external
 TIFF_SETTING	=	internal
 TIFF_OPTS	=	-DBIGTIFF_SUPPORT
 GEOTIFF_SETTING	=	internal
 GEOTIFF_INCLUDE =	
-GIF_SETTING	=	internal
+GIF_SETTING	=	external
 FITS_SETTING    =       no
 OGDI_SETTING	=	no
-ODBC_SETTING    =       no
+ODBC_SETTING    =       yes
 # PGeo driver is built-in when ODBC is available
-PGEO_SETTING    =       no
+PGEO_SETTING    =       yes
 NETCDF_SETTING  =       no
 LIBZ_SETTING	=	internal
 
@@ -320,7 +320,7 @@ GDAL_FORMATS = 	gxf gtiff hfa aigrid aaigrid ceos ceos2 iso8211 xpm \
 		nitf bmp pcidsk airsar rs2 ilwis rmf leveller sgi srtmhgt \
 		idrisi gsg ingr ers jaxapalsar dimap gff cosar pds adrg \
 		coasp tsx terragen blx msgn \
-		grib bsb gif jpeg png pcraster zlib 
+		wcs wms gif jpeg png zlib 
 
 ifneq ($(LIBZ_SETTING),no)
 GDAL_FORMATS := $(GDAL_FORMATS) rik
