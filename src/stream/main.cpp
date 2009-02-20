@@ -23,14 +23,19 @@
 
 #include <boost/filesystem.hpp>
 #include <boost/filesystem/fstream.hpp>
+#include <boost/multi_array.hpp>
 #include <boost/program_options.hpp> 
 #include <boost/thread.hpp>
 
 #include <gdal_priv.h>
 
+#include "cell.h"
+
+using namespace std;
 namespace po = boost::program_options;
 namespace fs = boost::filesystem;
-using namespace std;
+
+typedef boost::multi_array<Cell*,2> matrix;
 
 int main(int argc, char* argv[])
 {
@@ -101,7 +106,7 @@ int main(int argc, char* argv[])
 
 	if(optError != "")
 	{
-		cout << "stream: " << optError << "\nTry 'stream --help' for more information.\n";
+		cout << "stream: " << optError << "\n";
 		return 1;
 	}
 
@@ -158,17 +163,25 @@ int main(int argc, char* argv[])
 	pafScanline = (float *) CPLMalloc(sizeof(float)*nXSize*nYSize);
 	poBand->RasterIO( GF_Read, 0, 0, nXSize, nYSize, pafScanline, nXSize, nYSize, GDT_Float32, 0, 0 );
 	GDALClose((GDALDatasetH*)poDataset);
-
-	/*for(int yp = 0; yp<nYSize; yp++)
-	{
-		for(int xp = 0; xp<nXSize; xp++)
-			cout << pafScanline[yp * nXSize + xp] << ",\t";
-		cout << endl;
-	}*/			  
+	
+	//we have the data from the file, now we make the data 2-dimensional for easier reading	
+	matrix *dem_ptr = new matrix(boost::extents[nYSize][nXSize]);
+	matrix& dem = *dem_ptr;
+	for(matrix::index yp = 0; yp<nYSize; yp++)
+		for(matrix::index xp = 0; xp<nXSize; xp++)
+			dem[yp][xp] = new Cell(pafScanline[yp * nXSize + xp]);
+	CPLFree(pafScanline);
 					  
 	//Done reading DEM, now make a flow direction grid and fill sinkholes if necessary.
-					  
-					  
-
+	
+	
+	//write output files
+	
+	
+	//Free heap memory
+	for(matrix::index yp = 0; yp<nYSize; yp++)
+		for(matrix::index xp = 0; xp<nXSize; xp++)
+			delete dem[yp][xp];
+	delete dem_ptr;
 	return 0;
 }
