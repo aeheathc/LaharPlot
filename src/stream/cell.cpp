@@ -19,16 +19,30 @@
 
 #include "cell.h"
 
-Cell::Cell(float elevation): height(elevation)
-{
-	flowTotal = new set<Point>();
-}
+Cell::Cell(float elevation): height(elevation), flowDir(none)
+{}
 
-Cell::Cell(): height(0)
-{
-}
+Cell::Cell(float elevation, direction dir): height(elevation), flowDir(dir)
+{}
+
+Cell::Cell(): height(0), flowDir(none)
+{}
 
 Cell::~Cell()
+{}
+
+direction intDirection(int dirIn)
 {
-	delete flowTotal;
+	switch(dirIn)
+	{
+		case 0: return north;
+		case 1: return northeast;
+		case 2: return east;
+		case 3: return southeast;
+		case 4: return south;
+		case 5: return southwest;
+		case 6: return west;
+		case 7: return northwest;
+		case 8: return none;
+	}
 }

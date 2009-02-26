@@ -24,6 +24,10 @@
 
 using namespace std;
 
+enum direction{north, northeast, east, southeast, south, southwest, west, northwest, none};
+
+direction intDirection(int dirIn);
+
 struct Point
 {
 	int x,y;
@@ -32,10 +36,11 @@ struct Point
 class Cell
 {
 	public:
-	const float height;
-	unsigned short flowDir;
-	set<Point> *flowTotal;
-	Cell(double elevation);
+	float height;
+	direction flowDir;
+	set<Point> flowTotal;
+	Cell(float elevation);
+	Cell(float elevation, direction dir);
 	Cell();
 	~Cell();
 };

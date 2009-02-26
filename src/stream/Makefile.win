@@ -1,13 +1,13 @@
-boostlibs = "C:/lib/boost/boost_1_37_0/libs/filesystem/build/gcc-mingw-3.4.5/release/link-static/threading-multi/libboost_filesystem-mgw34-mt-1_37.lib" "C:/lib/boost/boost_1_37_0/libs/system/build/gcc-mingw-3.4.5/release/link-static/threading-multi/libboost_system-mgw34-mt-1_37.lib" "C:/lib/boost/boost_1_37_0/libs/thread/build/gcc-mingw-3.4.5/release/link-static/threading-multi/libboost_thread-mgw34-mt-1_37.lib" "C:/lib/boost/boost_1_37_0/libs/program_options/build/gcc-mingw-3.4.5/release/link-static/threading-multi/libboost_program_options-mgw34-mt-1_37.lib"
+boostlibs = "C:/lib/boost/boost_1_37_0/libs/filesystem/build/gcc-mingw-3.4.5/release/link-static/threading-multi/libboost_filesystem-mgw34-mt-1_37.lib" "C:/lib/boost/boost_1_37_0/libs/system/build/gcc-mingw-3.4.5/release/link-static/threading-multi/libboost_system-mgw34-mt-1_37.lib" "C:/lib/boost/boost_1_37_0/libs/thread/build/gcc-mingw-3.4.5/release/link-static/threading-multi/libboost_thread-mgw34-mt-1_37.lib" "C:/lib/boost/boost_1_37_0/libs/program_options/build/gcc-mingw-3.4.5/release/link-static/threading-multi/libboost_program_options-mgw34-mt-1_37.lib" "C:/lib/boost/boost_1_37_0/libs/date_time/build/gcc-mingw-3.4.5/release/link-static/threading-multi/libboost_date_time-mgw34-mt-1_37.lib"
 
 paths = -Ic:/lib/gdal/include -Ic:/lib/boost/boost_1_37_0 -Lc:/lib/gdal/lib
 
 #we don't use all the recommended warns just because our libraries generate a
 #ton of warnings due to poor coding standards
 warns = -Wall -ansi -Wcast-align -Wcast-qual -Wchar-subscripts -Winline \
-		-Wpointer-arith -Wredundant-decls -Wwrite-strings
+		-Wpointer-arith -Wwrite-strings -Wno-long-long
 
-all: main.cpp cell.o
+all: main.cpp main.h cell.o
 	g++ main.cpp cell.o -static $(warns) -o stream.exe $(paths) -lgdal $(boostlibs)
 
 cell.o: cell.cpp cell.h
