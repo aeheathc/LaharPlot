@@ -20,29 +20,57 @@
 #ifndef CELL_H
 #define CELL_H
 
-#include <set>
+#include <sstream>
+#include <string>
+
+#include <boost/interprocess/allocators/allocator.hpp>
+#include <boost/interprocess/containers/set.hpp>
+#include <boost/interprocess/managed_shared_memory.hpp>
 
 using namespace std;
+namespace ip = boost::interprocess;
+
+class Cell;
+class Point;
+
+typedef ip::allocator<Point, ip::managed_shared_memory::segment_manager> PointShmemAllocator;
 
 enum direction{north, northeast, east, southeast, south, southwest, west, northwest, none};
 
 direction intDirection(int dirIn);
 
-struct Point
+class Point
 {
+	public:
 	int x,y;
+	Point(int xIn, int yIn): x(xIn),y(yIn) {}
+	//Point(): x(-1),y(-1) {}
 };
 
+//	Cell represents one space on the DEM.
 class Cell
 {
 	public:
-	float height;
-	direction flowDir;
-	set<Point> flowTotal;
-	Cell(float elevation);
-	Cell(float elevation, direction dir);
+	float height;		//Elevation in meters
+	Point location;		//x,y location of this cell within the DEM
+	direction flowDir;	//the direction in which THIS cell flows
+	
+	/*
+		Grab a reference to the list of cells that flow into this one.
+		Guarantee enough space to add a Point.
+	*/
+	ip::set<Point,PointShmemAllocator>& flowTotal();
+	//same as above, but ensure there is extra space to add reserveSpace points
+	ip::set<Point,PointShmemAllocator>& flowTotal(int reserveSpace);
+	
+	Cell(float elevation, int x, int y);
+	Cell(float elevation, direction dir, int x, int y);
 	Cell();
 	~Cell();
+	
+	private:
+	//The name of the shared memory space that holds the total flow list
+	string shmemName;
 };
 
 #endif

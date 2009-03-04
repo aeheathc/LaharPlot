@@ -31,6 +31,7 @@
 #include <boost/date_time.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/filesystem/fstream.hpp>
+#include <boost/interprocess/allocators/allocator.hpp>
 #include <boost/interprocess/managed_shared_memory.hpp>
 #include <boost/multi_array.hpp>
 #include <boost/program_options.hpp> 
@@ -48,9 +49,9 @@ namespace ip = boost::interprocess;
 //Alias an STL compatible allocator of ints that allocates ints from the managed
 //shared memory segment.  This allocator will allow to place containers
 //in managed shared memory segments.
-typedef ip::allocator<Cell, ip::managed_shared_memory::segment_manager> ShmemAllocator;
+typedef ip::allocator<Cell, ip::managed_shared_memory::segment_manager> CellShmemAllocator;
 
-typedef boost::multi_array<Cell,2,ShmemAllocator> matrix;
+typedef boost::multi_array<Cell,2,CellShmemAllocator> matrix;
 
 struct Metadata
 {
@@ -59,22 +60,22 @@ struct Metadata
 	string projection;	
 };
 
-unsigned int nXSize, nYSize;
+int nXSize, nYSize;
 bool cmdIn = false, fileOut = false, cmdOut = false, verbose = false;
 
 int main(int argc, char* argv[]);
 
 // Fills the DEM matrix using data provided in linear form.
-void linearTo2d(unsigned int firstRow, unsigned int end, ip::managed_shared_memory::handle_t linearHandle);
+void linearTo2d(int firstRow, int end, ip::managed_shared_memory::handle_t linearHandle);
 
-/* Updates the DEM with correct flow direction information in rows
- firstRow to (end-1). Usually called multiple times in parallel, on different
- parts of the DEM.
+/*	Updates the DEM with correct flow direction information in rows
+	firstRow to (end-1). Usually called multiple times in parallel, on different
+	parts of the DEM.
 */
-void flowDirection(unsigned int firstRow, unsigned int end);
-direction greatestSlope(matrix* dem, unsigned int x, unsigned int y, unsigned int radius);
+void flowDirection(int firstRow, int end);
+direction greatestSlope(Cell** dem, int x, int y, int radius);
 
-void writeFiles(matrix* dem, fs::ofstream& sdem, fs::ofstream& meta,
+void writeFiles(Cell** dem, fs::ofstream& sdem, fs::ofstream& meta,
 				fs::ofstream& fdir, fs::ofstream& ftotal, Metadata& iniData);
 void writeStdOut(Metadata iniData);
 

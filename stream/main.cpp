@@ -29,7 +29,7 @@ int main(int argc, char* argv[])
 		("std-in,i", "Read topography from standard-in. Can't be used with --input-file.")
 		("output-file,o", po::value<string>(), "Output to files using the base name <arg>.")
 		("std-out,t", "Output to standard-out. May be used with --output-file. Overrides --verbose.")
-		("threads,r", po::value<unsigned int>(),
+		("threads,r", po::value<int>(),
 			"Set number of threads for parallel calculations. Default is 4.")
 		("verbose,v", "Display detailed progress.")
 	;
@@ -50,7 +50,7 @@ int main(int argc, char* argv[])
 	cmdIn = vm.count("std-in");
 	cmdOut = vm.count("std-out");
 	verbose = vm.count("verbose");
-	unsigned int threads = vm.count("threads") ? vm["threads"].as<unsigned int>() : 4;
+	int threads = vm.count("threads") ? abs(vm["threads"].as<int>()) : 4;
 	fs::ofstream sDem, meta, flowDir, flowTotal;
 	
 	if(vm.count("input-file"))
@@ -126,13 +126,13 @@ int main(int argc, char* argv[])
 	}
 	
 	//set up shared memory
-	matrix *dem = NULL;
+	Cell **dem = NULL;
 	float *pafScanline;
 	ip::shared_memory_object::remove("stream_finder_dem");
 	ip::managed_shared_memory *seg=NULL;
 	ip::managed_shared_memory::handle_t linearHandle;
 	try{
-		size_t matrixBytes = sizeof(Cell) * cellsX * cellsY + sizeof(matrix);
+		size_t matrixBytes = sizeof(Cell) * cellsX * cellsY;
 		size_t linearBytes = sizeof(float) * cellsX * cellsY;
 		ip::managed_shared_memory segment(ip::create_only,
 							"stream_finder_dem",		//segment name
@@ -140,10 +140,10 @@ int main(int argc, char* argv[])
 		seg = &segment;
 							
 		//Initialize shared memory STL-compatible allocator
-		const ShmemAllocator alloc_inst(segment.get_segment_manager());
+		const CellShmemAllocator alloc_inst(segment.get_segment_manager());
 		
 		//Construct a shared memory
-		dem = segment.construct<matrix>("DEM")(boost::extents[cellsY][cellsX]);
+		dem = segment.construct<Cell>("DEM")[cellsX][cellsY];
 		pafScanline = (float*)segment.allocate(linearBytes);
 		linearHandle = segment.get_handle_from_address(pafScanline);
 	}
@@ -180,14 +180,13 @@ int main(int argc, char* argv[])
 	//We have the data from the file, now we make the data 2-dimensional for easier reading.
 	//The cells on the outside are made with default outward flow directions.
 
-
 	if(threads > nYSize) threads = nYSize;
-	unsigned int rowsPerThread = nYSize / threads;
+	int rowsPerThread = nYSize / threads;
 
 	boost::thread_group demFiller;
-	for(unsigned int thread=0; thread<(threads-1); thread++)
+	for(int thread=0; thread<(threads-1); thread++)
 	{
-		unsigned int firstRow = thread*rowsPerThread;
+		int firstRow = thread*rowsPerThread;
 		demFiller.add_thread(new boost::thread(linearTo2d, pafScanline,
 											firstRow, firstRow+rowsPerThread));
 	}
@@ -207,9 +206,9 @@ int main(int argc, char* argv[])
 		sinkholes = false;
 		//make flow direction grid
 		boost::thread_group flowDirCalc;
-		for(unsigned int thread=0; thread<(threads-1); thread++)
+		for(int thread=0; thread<(threads-1); thread++)
 		{
-			unsigned int firstRow = thread*rowsPerThread;
+			int firstRow = thread*rowsPerThread;
 			flowDirCalc.add_thread(new boost::thread(flowDirection, firstRow, firstRow+rowsPerThread));
 		}
 		flowDirCalc.add_thread(new boost::thread(flowDirection, (threads-1)*rowsPerThread, nYSize));
@@ -226,22 +225,22 @@ int main(int argc, char* argv[])
 	writeout.join_all();
 	
 	//Free shared memory
-	seg->destroy<matrix>("DEM");
+	seg->destroy<Cell>("DEM");
 	seg->deallocate(pafScanline);
 	ip::shared_memory_object::remove("stream_finder_dem");
 	return 0;
 }
 
-void flowDirection(unsigned int row, unsigned int end)
+void flowDirection(int row, int end)
 {
-	matrix *dem=NULL;
+	Cell **dem=NULL;
 	try{
 		//Special shared memory where we can construct objects associated with a name.
 		//Connect to the already created shared memory segment+initialize needed resources
 		ip::managed_shared_memory segment(ip::open_only, "stream_finder_dem");  //segment name
 
 		//Find the vector using the c-string name
-		dem = segment.find<matrix>("DEM").first;
+		dem = segment.find<Cell>("DEM").first;
    }
    catch(...){
       throw;
@@ -253,10 +252,10 @@ void flowDirection(unsigned int row, unsigned int end)
 	
 	for(;row < end; row++)
 	{
-		for(unsigned int column = 1; column < (nXSize-1); column++)
+		for(int column = 1; column < (nXSize-1); column++)
 		{
 			direction celldir = none;
-			for(unsigned int radius = 1; celldir == none; radius++)
+			for(int radius = 1; celldir == none; radius++)
 			{
 				celldir = greatestSlope(dem, row, column, radius);
 			}
@@ -265,7 +264,7 @@ void flowDirection(unsigned int row, unsigned int end)
 	}
 }
 
-direction greatestSlope(matrix* dem, unsigned int row, unsigned int column, unsigned int radius)
+direction greatestSlope(Cell** dem, int row, int column, int radius)
 {
 	/*
 	  When this function claims that no single direction has the greatest slope,
@@ -303,65 +302,65 @@ direction greatestSlope(matrix* dem, unsigned int row, unsigned int column, unsi
 	return intDirection(max);
 }
 
-void linearTo2d(unsigned int firstRow, unsigned int end, ip::managed_shared_memory::handle_t linearHandle)
+void linearTo2d(int firstRow, int end, ip::managed_shared_memory::handle_t linearHandle)
 {
 	float* linearData;
-	matrix *dem=NULL;
+	Cell **dem=NULL;
 	try{
 		//Special shared memory where we can construct objects associated with a name.
 		//Connect to the already created shared memory segment+initialize needed resources
 		ip::managed_shared_memory segment(ip::open_only, "stream_finder_dem");  //segment name
 
 		//Find the vector using the c-string name
-		dem = segment.find<matrix>("DEM").first;
+		dem = segment.find<Cell**>("DEM").first;
 		linearData = (float*)segment.get_address_from_handle(linearHandle);
    }
    catch(...){
       throw;
    }
 
-	unsigned int yp = firstRow;
+	int yp = firstRow;
 	if(!firstRow)
 	{
-		(*dem)[yp][0] = Cell(linearData[yp * nXSize], northwest);
-		for(unsigned int xp = 1; xp<(nXSize-1); xp++)
+		(*dem)[yp][0] = Cell(linearData[yp * nXSize], northwest, yp, 0);
+		for(int xp = 1; xp<(nXSize-1); xp++)
 		{
-			(*dem)[yp][xp] = Cell(linearData[yp * nXSize + xp], north);
+			(*dem)[yp][xp] = Cell(linearData[yp * nXSize + xp], north, yp, xp);
 		}
-		(*dem)[yp][nXSize-1] = Cell(linearData[yp * nXSize + (nXSize-1)], northeast);
+		(*dem)[yp][nXSize-1] = Cell(linearData[yp * nXSize + (nXSize-1)], northeast, yp, nXSize-1);
 		yp++;
 	}
-	/*boost::xtime xt;
-	boost::xtime_get (&xt, boost::TIME_UTC);
-	xt.sec += 300;
-	boost::this_thread::sleep(xt);*/ // debug sleep
-	unsigned int lastNormRow = (end==nYSize) ? end-1 : end;
+	//boost::xtime xt;
+	//boost::xtime_get (&xt, boost::TIME_UTC);
+	//xt.sec += 300;
+	//boost::this_thread::sleep(xt); // debug sleep
+	int lastNormRow = (end==nYSize) ? end-1 : end;
 	for(; yp<lastNormRow; yp++)
 	{
-		(*dem)[yp][0] = Cell(linearData[yp * nXSize], west);
-		for(unsigned int xp = 1; xp<(nXSize-1); xp++)
+		(*dem)[yp][0] = Cell(linearData[yp * nXSize], west, yp, 0);
+		for(int xp = 1; xp<(nXSize-1); xp++)
 		{
-			(*dem)[yp][xp] = Cell(linearData[yp * nXSize + xp]);
+			(*dem)[yp][xp] = Cell(linearData[yp * nXSize + xp], yp, xp);
 		}
-		(*dem)[yp][nXSize-1] = Cell(linearData[yp * nXSize + (nXSize-1)], east);
+		(*dem)[yp][nXSize-1] = Cell(linearData[yp * nXSize + (nXSize-1)], east, yp, nXSize-1);
 	}
 	if(lastNormRow != end)
 	{
-		(*dem)[yp][0] = Cell(linearData[yp * nXSize], southwest);
-		for(unsigned int xp = 1; xp<(nXSize-1); xp++)
+		(*dem)[yp][0] = Cell(linearData[yp * nXSize], southwest, yp, 0);
+		for(int xp = 1; xp<(nXSize-1); xp++)
 		{
-			(*dem)[yp][xp] = Cell(linearData[yp * nXSize + xp], south);
+			(*dem)[yp][xp] = Cell(linearData[yp * nXSize + xp], south, yp, xp);
 		}
-		(*dem)[yp][nXSize-1] = Cell(linearData[yp * nXSize + (nXSize-1)], southeast);
+		(*dem)[yp][nXSize-1] = Cell(linearData[yp * nXSize + (nXSize-1)], southeast, yp, nXSize-1);
 	}
 }
 
-void writeFiles(matrix* dem, fs::ofstream& sdem, fs::ofstream& meta, fs::ofstream& fdir, fs::ofstream& ftotal, Metadata& iniData)
+void writeFiles(Cell** dem, fs::ofstream& sdem, fs::ofstream& meta, fs::ofstream& fdir, fs::ofstream& ftotal, Metadata& iniData)
 {
 	//write Simplified DEM
-	for(unsigned int row=0; row<nYSize; row++)
+	for(int row=0; row<nYSize; row++)
 	{
-		for(unsigned int column=0; column<(nXSize-1); column++)
+		for(int column=0; column<(nXSize-1); column++)
 		{
 			sdem << (*dem)[row][column].height << '\t';
 		}
@@ -377,9 +376,9 @@ void writeFiles(matrix* dem, fs::ofstream& sdem, fs::ofstream& meta, fs::ofstrea
 	meta.close();
 	
 	//Write Flow Direction Grid
-	for(unsigned int row=0; row<nYSize; row++)
+	for(int row=0; row<nYSize; row++)
 	{
-		for(unsigned int column=0; column<(nXSize-1); column++)
+		for(int column=0; column<(nXSize-1); column++)
 		{
 			fdir << (int)((*dem)[row][column].flowDir) << '\t';
 		}
@@ -388,15 +387,15 @@ void writeFiles(matrix* dem, fs::ofstream& sdem, fs::ofstream& meta, fs::ofstrea
 	fdir.close();
 
 	//write Flow Total Grid
-	for(unsigned int row=0; row<nYSize; row++)
+	for(int row=0; row<nYSize; row++)
 	{
 		int numOut = 0;
-		for(unsigned int column=0; column<(nXSize-1); column++)
+		for(int column=0; column<(nXSize-1); column++)
 		{
-			numOut = (*dem)[row][column].flowTotal.size();
+			numOut = (*dem)[row][column].flowTotal().size();
 			ftotal << numOut << '\t';
 		}
-		numOut = (*dem)[row][nXSize-1].flowTotal.size();
+		numOut = (*dem)[row][nXSize-1].flowTotal().size();
 		ftotal << numOut << '\n';
 	}
 	ftotal.close();
@@ -404,23 +403,23 @@ void writeFiles(matrix* dem, fs::ofstream& sdem, fs::ofstream& meta, fs::ofstrea
 
 void writeStdOut(Metadata iniData)
 {
-	matrix *dem=NULL;
+	Cell **dem=NULL;
 	try{
 		//Special shared memory where we can construct objects associated with a name.
 		//Connect to the already created shared memory segment+initialize needed resources
 		ip::managed_shared_memory segment(ip::open_only, "stream_finder_dem");  //segment name
 
 		//Find the vector using the c-string name
-		dem = segment.find<matrix>("DEM").first;
+		dem = segment.find<Cell**>("DEM").first;
 	}
 	catch(...){
 		throw;
 	}
    
 	//write Simplified DEM
-	for(unsigned int row=0; row<nYSize; row++)
+	for(int row=0; row<nYSize; row++)
 	{
-		for(unsigned int column=0; column<(nXSize-1); column++)
+		for(int column=0; column<(nXSize-1); column++)
 		{
 			cout << (*dem)[row][column].height << '\t';
 		}
@@ -436,9 +435,9 @@ void writeStdOut(Metadata iniData)
 	cout << '\n';
 	
 	//Write Flow Direction Grid
-	for(unsigned int row=0; row<nYSize; row++)
+	for(int row=0; row<nYSize; row++)
 	{
-		for(unsigned int column=0; column<(nXSize-1); column++)
+		for(int column=0; column<(nXSize-1); column++)
 		{
 			cout << (int)((*dem)[row][column].flowDir) << '\t';
 		}
@@ -446,15 +445,15 @@ void writeStdOut(Metadata iniData)
 	}
 	cout << '\n';
 	//write Flow Total Grid
-	for(unsigned int row=0; row<nYSize; row++)
+	for(int row=0; row<nYSize; row++)
 	{
 		int numOut = 0;
-		for(unsigned int column=0; column<(nXSize-1); column++)
+		for(int column=0; column<(nXSize-1); column++)
 		{
-			numOut = (*dem)[row][column].flowTotal.size();
+			numOut = (*dem)[row][column].flowTotal().size();
 			cout << numOut << '\t';
 		}
-		numOut = (*dem)[row][nXSize-1].flowTotal.size();
+		numOut = (*dem)[row][nXSize-1].flowTotal().size();
 		cout << numOut << '\n';
 	}
 }

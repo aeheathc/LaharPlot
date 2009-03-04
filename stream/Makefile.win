@@ -1,9 +1,11 @@
-boostpath = C:/lib/boost/boost_1_38_0/lib
-boostlibs = "$(boostpath)/libboost_filesystem-mgw34-mt-1_38.lib" "$(boostpath)/libboost_system-mgw34-mt-1_38.lib" "$(boostpath)/libboost_thread-mgw34-mt-1_38.lib" "$(boostpath)/libboost_program_options-mgw34-mt-1_38.lib" "$(boostpath)/libboost_date_time-mgw34-mt-1_38.lib"
-paths = -Ic:/lib/gdal/include -Ic:/lib/boost/boost_1_38_0 -Lc:/lib/gdal/lib
+boostversion = 1_38
+boostpath = C:/lib/boost/boost_$(boostversion)_0/lib
+boostlibs = "$(boostpath)/libboost_filesystem-mgw34-mt-$(boostversion).lib" "$(boostpath)/libboost_system-mgw34-mt-$(boostversion).lib" "$(boostpath)/libboost_thread-mgw34-mt-$(boostversion).lib" "$(boostpath)/libboost_program_options-mgw34-mt-$(boostversion).lib" "$(boostpath)/libboost_date_time-mgw34-mt-$(boostversion).lib"
 
-#we don't use all the recommended warns just because our libraries generate a
-#ton of warnings due to poor coding standards
+paths = -Ic:/lib/gdal/include -Ic:/lib/boost/boost_$(boostversion)_0 -Lc:/lib/gdal/lib
+
+#we don't use all the recommended warns just because the 3rd party libraries
+#generate a ton of warnings due to poor coding standards
 warns = -Wall -ansi -Wcast-align -Wcast-qual -Wchar-subscripts -Winline \
 		-Wpointer-arith -Wwrite-strings -Wno-long-long
 
@@ -11,7 +13,7 @@ all: main.cpp main.h cell.o
 	g++ main.cpp cell.o -static $(warns) -o stream.exe $(paths) -lgdal $(boostlibs)
 
 cell.o: cell.cpp cell.h
-	g++ -c cell.cpp
+	g++ cell.cpp -c $(paths)
 
 clean:
 	rm *.o
