@@ -133,8 +133,8 @@ int main(int argc, char* argv[])
 	ip::managed_shared_memory::handle_t linearHandle;
 	try{
 		size_t matrixBytes = (sizeof(Cell) * cellsX + sizeof(ip::vector<Cell, CellShmemAllocator>))
-								* cellsY + sizeof(Matrix);
-		size_t linearBytes = sizeof(float) * cellsX * cellsY;
+								* cellsY + sizeof(Matrix) + 100;
+		size_t linearBytes = sizeof(float) * cellsX * cellsY + 100;
 		ip::managed_shared_memory segment(ip::create_only,
 							"stream_finder_dem",		//segment name
 							matrixBytes+linearBytes);	//segment size in bytes
@@ -155,6 +155,7 @@ int main(int argc, char* argv[])
 		throw;
 	}
 	cout << "test2\n";
+	pafScanline[12]=3.5;
 	GDALRasterBand  *poBand;
 	int             nBlockXSize, nBlockYSize;
 	int             bGotMin, bGotMax;
@@ -169,7 +170,7 @@ int main(int argc, char* argv[])
 		GDALComputeRasterMinMax((GDALRasterBandH)poBand, TRUE, adfMinMax);
 	nXSize = abs(poBand->GetXSize());
 	nYSize = abs(poBand->GetYSize());
-	cout << nXSize << '=' << cellsX << '\n' << nYSize << '=' << cellsY;
+	cout << "test2.5\n";
 	//pafScanline = (float *) CPLMalloc(sizeof(float)*nXSize*nYSize);
 	poBand->RasterIO( GF_Read, 0, 0, nXSize, nYSize, pafScanline, nXSize, nYSize, GDT_Float32, 0, 0 );
 	GDALClose((GDALDatasetH*)poDataset);
