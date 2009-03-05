@@ -1,11 +1,16 @@
 boostversion = 1_38
 boostpath = /major/aeheathc/lib/boost/boost_$(boostversion)_0
 boostToolset = gcc43
-boostlibs = -lboost_filesystem-$(boostToolset)-mt \
-			-lboost_thread-$(boostToolset)-mt \
-			-lboost_program_options-$(boostToolset)-mt \
-			-lboost_date_time-$(boostToolset)-mt \
-			-lboost_system-$(boostToolset)-mt
+#boostlibs = -lboost_filesystem-$(boostToolset)-mt \
+#			-lboost_thread-$(boostToolset)-mt \
+#			-lboost_program_options-$(boostToolset)-mt \
+#			-lboost_date_time-$(boostToolset)-mt \
+#			-lboost_system-$(boostToolset)-mt
+boostlibs = $(boostpath)/lib/libboost_filesystem-$(boostToolset)-mt.a \
+			$(boostpath)/lib/libboost_thread-$(boostToolset)-mt.a \
+			$(boostpath)/lib/libboost_program_options-$(boostToolset)-mt.a \
+			$(boostpath)/lib/libboost_date_time-$(boostToolset)-mt.a \
+			$(boostpath)/lib/libboost_system-$(boostToolset)-mt.a
 			
 linuxlibs = -pthread -lcurl -lpng -ljpeg -lgif
 
@@ -16,11 +21,10 @@ warns = -Wall -ansi -Wcast-align -Wcast-qual -Wchar-subscripts -Winline \
 
 paths = -I/major/aeheathc/lib/gdal/include -L/major/aeheathc/lib/gdal/lib \
 		-I$(boostpath) -L$(boostpath)/lib
-
 		
 all: main.cpp cell.o
 	g++ main.cpp cell.o $(warns) -o stream  $(paths) -lgdal $(boostlibs) $(linuxlibs)
-
+	
 cell.o: cell.cpp cell.h
 	g++ cell.cpp -c $(paths)
 
