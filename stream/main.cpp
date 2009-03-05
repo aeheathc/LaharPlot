@@ -169,7 +169,7 @@ int main(int argc, char* argv[])
 		GDALComputeRasterMinMax((GDALRasterBandH)poBand, TRUE, adfMinMax);
 	nXSize = abs(poBand->GetXSize());
 	nYSize = abs(poBand->GetYSize());
-	cout << nXSize << '=' << cellsX << '\n' << nYsize << '=' << cellsY;
+	cout << nXSize << '=' << cellsX << '\n' << nYSize << '=' << cellsY;
 	//pafScanline = (float *) CPLMalloc(sizeof(float)*nXSize*nYSize);
 	poBand->RasterIO( GF_Read, 0, 0, nXSize, nYSize, pafScanline, nXSize, nYSize, GDT_Float32, 0, 0 );
 	GDALClose((GDALDatasetH*)poDataset);
