@@ -32,6 +32,7 @@
 #include <boost/filesystem.hpp>
 #include <boost/filesystem/fstream.hpp>
 #include <boost/interprocess/allocators/allocator.hpp>
+#include <boost/interprocess/containers/vector.hpp>
 #include <boost/interprocess/managed_shared_memory.hpp>
 #include <boost/multi_array.hpp>
 #include <boost/program_options.hpp> 
@@ -46,12 +47,13 @@ namespace po = boost::program_options;
 namespace fs = boost::filesystem;
 namespace ip = boost::interprocess;
 
-//Alias an STL compatible allocator of ints that allocates ints from the managed
+//Alias an STL compatible allocator that allocates ints from the managed
 //shared memory segment.  This allocator will allow to place containers
 //in managed shared memory segments.
 typedef ip::allocator<Cell, ip::managed_shared_memory::segment_manager> CellShmemAllocator;
-
-typedef boost::multi_array<Cell,2,CellShmemAllocator> matrix;
+typedef ip::allocator<	ip::vector<Cell, CellShmemAllocator>,
+						ip::managed_shared_memory::segment_manager> VecShmemAllocator;
+typedef ip::vector<ip::vector<Cell, CellShmemAllocator>, VecShmemAllocator> Matrix;
 
 struct Metadata
 {
@@ -73,9 +75,9 @@ void linearTo2d(int firstRow, int end, ip::managed_shared_memory::handle_t linea
 	parts of the DEM.
 */
 void flowDirection(int firstRow, int end);
-direction greatestSlope(Cell** dem, int x, int y, int radius);
+direction greatestSlope(Matrix* dem, int x, int y, int radius);
 
-void writeFiles(Cell** dem, fs::ofstream& sdem, fs::ofstream& meta,
+void writeFiles(Matrix* dem, fs::ofstream& sdem, fs::ofstream& meta,
 				fs::ofstream& fdir, fs::ofstream& ftotal, Metadata& iniData);
 void writeStdOut(Metadata iniData);
 

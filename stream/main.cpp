@@ -124,15 +124,16 @@ int main(int argc, char* argv[])
 		iniData.physicalSize = adfGeoTransform[1];
 		//above size is X-size. Y-size is in adfGeoTransform[5]
 	}
-	
+	cout << "test1\n";
 	//set up shared memory
-	Cell **dem = NULL;
+	Matrix *dem = NULL;
 	float *pafScanline;
 	ip::shared_memory_object::remove("stream_finder_dem");
 	ip::managed_shared_memory *seg=NULL;
 	ip::managed_shared_memory::handle_t linearHandle;
 	try{
-		size_t matrixBytes = sizeof(Cell) * cellsX * cellsY;
+		size_t matrixBytes = (sizeof(Cell) * cellsX + sizeof(ip::vector<Cell, CellShmemAllocator>))
+								* cellsY + sizeof(Matrix);
 		size_t linearBytes = sizeof(float) * cellsX * cellsY;
 		ip::managed_shared_memory segment(ip::create_only,
 							"stream_finder_dem",		//segment name
@@ -140,10 +141,12 @@ int main(int argc, char* argv[])
 		seg = &segment;
 							
 		//Initialize shared memory STL-compatible allocator
-		const CellShmemAllocator alloc_inst(segment.get_segment_manager());
+		const VecShmemAllocator alloc_inst(segment.get_segment_manager());
 		
 		//Construct a shared memory
-		dem = segment.construct<Cell>("DEM")[cellsX][cellsY];
+		dem = segment.construct<Matrix>("DEM")(alloc_inst);
+		dem->reserve(cellsY);
+		for(Matrix::iterator iter=dem->begin(); iter!=dem->end(); iter++) (*iter).reserve(cellsX);
 		pafScanline = (float*)segment.allocate(linearBytes);
 		linearHandle = segment.get_handle_from_address(pafScanline);
 	}
@@ -151,7 +154,7 @@ int main(int argc, char* argv[])
 		ip::shared_memory_object::remove("stream_finder_dem");
 		throw;
 	}
-	
+	cout << "test2\n";
 	GDALRasterBand  *poBand;
 	int             nBlockXSize, nBlockYSize;
 	int             bGotMin, bGotMax;
@@ -166,20 +169,21 @@ int main(int argc, char* argv[])
 		GDALComputeRasterMinMax((GDALRasterBandH)poBand, TRUE, adfMinMax);
 	nXSize = abs(poBand->GetXSize());
 	nYSize = abs(poBand->GetYSize());
-	pafScanline = (float *) CPLMalloc(sizeof(float)*nXSize*nYSize);
+	cout << nXSize << '=' << cellsX << '\n' << nYsize << '=' << cellsY;
+	//pafScanline = (float *) CPLMalloc(sizeof(float)*nXSize*nYSize);
 	poBand->RasterIO( GF_Read, 0, 0, nXSize, nYSize, pafScanline, nXSize, nYSize, GDT_Float32, 0, 0 );
 	GDALClose((GDALDatasetH*)poDataset);
 	
 	if(nXSize < 2 || nYSize < 2)
 	{
-		CPLFree(pafScanline);
+		//CPLFree(pafScanline);
 		cout << "Something is wrong with the input DEM. Aborting.\n";
 		return 1;
 	}
 	
 	//We have the data from the file, now we make the data 2-dimensional for easier reading.
 	//The cells on the outside are made with default outward flow directions.
-
+	cout << "test3\n";
 	if(threads > nYSize) threads = nYSize;
 	int rowsPerThread = nYSize / threads;
 
@@ -187,15 +191,15 @@ int main(int argc, char* argv[])
 	for(int thread=0; thread<(threads-1); thread++)
 	{
 		int firstRow = thread*rowsPerThread;
-		demFiller.add_thread(new boost::thread(linearTo2d, pafScanline,
-											firstRow, firstRow+rowsPerThread));
+		demFiller.add_thread(new boost::thread(linearTo2d, firstRow,
+												firstRow+rowsPerThread, linearHandle));
 	}
-	demFiller.add_thread(new boost::thread(linearTo2d, pafScanline,
-										(threads-1)*rowsPerThread, nYSize));
+	demFiller.add_thread(new boost::thread(linearTo2d, (threads-1)*rowsPerThread,
+											nYSize, linearHandle));
 	
-	CPLFree(pafScanline);
+	//CPLFree(pafScanline);
 	demFiller.join_all();	//wait until all the data is in place before doing calcs on it
-
+	cout << "test4\n";
 	//Done reading DEM, now do calculations.
 	/* This loop structure is here in case we find any sinkholes, in which case
 		we would have to redo all the calculations after adjusting the heights.
@@ -225,22 +229,22 @@ int main(int argc, char* argv[])
 	writeout.join_all();
 	
 	//Free shared memory
-	seg->destroy<Cell>("DEM");
-	seg->deallocate(pafScanline);
+	seg->destroy<Matrix>("DEM");
+	seg->deallocate((void*)pafScanline);
 	ip::shared_memory_object::remove("stream_finder_dem");
 	return 0;
 }
 
 void flowDirection(int row, int end)
 {
-	Cell **dem=NULL;
+	Matrix *dem=NULL;
 	try{
 		//Special shared memory where we can construct objects associated with a name.
 		//Connect to the already created shared memory segment+initialize needed resources
 		ip::managed_shared_memory segment(ip::open_only, "stream_finder_dem");  //segment name
 
 		//Find the vector using the c-string name
-		dem = segment.find<Cell>("DEM").first;
+		dem = segment.find<Matrix>("DEM").first;
    }
    catch(...){
       throw;
@@ -264,7 +268,7 @@ void flowDirection(int row, int end)
 	}
 }
 
-direction greatestSlope(Cell** dem, int row, int column, int radius)
+direction greatestSlope(Matrix* dem, int row, int column, int radius)
 {
 	/*
 	  When this function claims that no single direction has the greatest slope,
@@ -305,14 +309,14 @@ direction greatestSlope(Cell** dem, int row, int column, int radius)
 void linearTo2d(int firstRow, int end, ip::managed_shared_memory::handle_t linearHandle)
 {
 	float* linearData;
-	Cell **dem=NULL;
+	Matrix *dem=NULL;
 	try{
 		//Special shared memory where we can construct objects associated with a name.
 		//Connect to the already created shared memory segment+initialize needed resources
 		ip::managed_shared_memory segment(ip::open_only, "stream_finder_dem");  //segment name
 
 		//Find the vector using the c-string name
-		dem = segment.find<Cell**>("DEM").first;
+		dem = segment.find<Matrix>("DEM").first;
 		linearData = (float*)segment.get_address_from_handle(linearHandle);
    }
    catch(...){
@@ -355,7 +359,7 @@ void linearTo2d(int firstRow, int end, ip::managed_shared_memory::handle_t linea
 	}
 }
 
-void writeFiles(Cell** dem, fs::ofstream& sdem, fs::ofstream& meta, fs::ofstream& fdir, fs::ofstream& ftotal, Metadata& iniData)
+void writeFiles(Matrix* dem, fs::ofstream& sdem, fs::ofstream& meta, fs::ofstream& fdir, fs::ofstream& ftotal, Metadata& iniData)
 {
 	//write Simplified DEM
 	for(int row=0; row<nYSize; row++)
@@ -374,7 +378,7 @@ void writeFiles(Cell** dem, fs::ofstream& sdem, fs::ofstream& meta, fs::ofstream
 			<< iniData.originX << "\norigin_y=" << iniData.originY
 			<< "\nprojection=" << iniData.projection << "\n";
 	meta.close();
-	
+
 	//Write Flow Direction Grid
 	for(int row=0; row<nYSize; row++)
 	{
@@ -403,14 +407,14 @@ void writeFiles(Cell** dem, fs::ofstream& sdem, fs::ofstream& meta, fs::ofstream
 
 void writeStdOut(Metadata iniData)
 {
-	Cell **dem=NULL;
+	Matrix *dem=NULL;
 	try{
 		//Special shared memory where we can construct objects associated with a name.
 		//Connect to the already created shared memory segment+initialize needed resources
 		ip::managed_shared_memory segment(ip::open_only, "stream_finder_dem");  //segment name
 
 		//Find the vector using the c-string name
-		dem = segment.find<Cell**>("DEM").first;
+		dem = segment.find<Matrix>("DEM").first;
 	}
 	catch(...){
 		throw;
