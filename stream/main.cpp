@@ -129,33 +129,31 @@ int main(int argc, char* argv[])
 	Matrix *dem = NULL;
 	float *pafScanline;
 	ip::shared_memory_object::remove("stream_finder_dem");
-	ip::managed_shared_memory *seg=NULL;
+	ip::managed_shared_memory *segment=NULL;
 	ip::managed_shared_memory::handle_t linearHandle;
 	try{
 		size_t matrixBytes = (sizeof(Cell) * cellsX + sizeof(ip::vector<Cell, CellShmemAllocator>))
 								* cellsY + sizeof(Matrix) + 100;
 		size_t linearBytes = sizeof(float) * cellsX * cellsY + 100;
-		ip::managed_shared_memory segment(ip::create_only,
+		segment = new ip::managed_shared_memory(ip::create_only,
 							"stream_finder_dem",		//segment name
-							matrixBytes+linearBytes);	//segment size in bytes
-		seg = &segment;
+							matrixBytes+linearBytes+1000000);	//segment size in bytes
 							
 		//Initialize shared memory STL-compatible allocator
-		const VecShmemAllocator alloc_inst(segment.get_segment_manager());
+		const VecShmemAllocator alloc_inst(segment->get_segment_manager());
 		
 		//Construct a shared memory
-		dem = segment.construct<Matrix>("DEM")(alloc_inst);
+		dem = segment->construct<Matrix>("DEM")(alloc_inst);
 		dem->reserve(cellsY);
 		for(Matrix::iterator iter=dem->begin(); iter!=dem->end(); iter++) (*iter).reserve(cellsX);
-		pafScanline = (float*)segment.allocate(linearBytes);
-		linearHandle = segment.get_handle_from_address(pafScanline);
+		pafScanline = (float*)segment->allocate(linearBytes);
+		linearHandle = segment->get_handle_from_address(pafScanline);
 	}
 	catch(...){
 		ip::shared_memory_object::remove("stream_finder_dem");
 		throw;
 	}
 	cout << "test2\n";
-	pafScanline[12]=3.5;
 	GDALRasterBand  *poBand;
 	int             nBlockXSize, nBlockYSize;
 	int             bGotMin, bGotMax;
@@ -230,8 +228,9 @@ int main(int argc, char* argv[])
 	writeout.join_all();
 	
 	//Free shared memory
-	seg->destroy<Matrix>("DEM");
-	seg->deallocate((void*)pafScanline);
+	segment->destroy<Matrix>("DEM");
+	segment->deallocate((void*)pafScanline);
+	delete segment;
 	ip::shared_memory_object::remove("stream_finder_dem");
 	return 0;
 }
@@ -239,13 +238,14 @@ int main(int argc, char* argv[])
 void flowDirection(int row, int end)
 {
 	Matrix *dem=NULL;
+	ip::managed_shared_memory *segment=NULL;
 	try{
 		//Special shared memory where we can construct objects associated with a name.
 		//Connect to the already created shared memory segment+initialize needed resources
-		ip::managed_shared_memory segment(ip::open_only, "stream_finder_dem");  //segment name
+		segment = new ip::managed_shared_memory(ip::open_only, "stream_finder_dem");  //segment name
 
 		//Find the vector using the c-string name
-		dem = segment.find<Matrix>("DEM").first;
+		dem = segment->find<Matrix>("DEM").first;
    }
    catch(...){
       throw;
@@ -267,6 +267,7 @@ void flowDirection(int row, int end)
 			(*dem)[row][column].flowDir = celldir;
 		}
 	}
+	delete segment;
 }
 
 direction greatestSlope(Matrix* dem, int row, int column, int radius)
@@ -309,21 +310,27 @@ direction greatestSlope(Matrix* dem, int row, int column, int radius)
 
 void linearTo2d(int firstRow, int end, ip::managed_shared_memory::handle_t linearHandle)
 {
+	cout << "linearTo2d.1\n";
 	float* linearData;
 	Matrix *dem=NULL;
+	ip::managed_shared_memory *segment=NULL;
 	try{
 		//Special shared memory where we can construct objects associated with a name.
 		//Connect to the already created shared memory segment+initialize needed resources
-		ip::managed_shared_memory segment(ip::open_only, "stream_finder_dem");  //segment name
+		segment = new ip::managed_shared_memory(ip::open_only, "stream_finder_dem");  //segment name
 
 		//Find the vector using the c-string name
-		dem = segment.find<Matrix>("DEM").first;
-		linearData = (float*)segment.get_address_from_handle(linearHandle);
-   }
-   catch(...){
-      throw;
-   }
-
+		dem = segment->find<Matrix>("DEM").first;
+		linearData = (float*)segment->get_address_from_handle(linearHandle);
+	}
+	catch(...){
+		throw;
+	}
+	cout << "linearTo2d.2\n";
+	linearData[12]=3.5;
+	cout << "linearTo2d.2.1\n";
+	(*dem)[0][0] = Cell(0,none,0,0);
+	cout << "linearTo2d.2.2\n";
 	int yp = firstRow;
 	if(!firstRow)
 	{
@@ -335,13 +342,19 @@ void linearTo2d(int firstRow, int end, ip::managed_shared_memory::handle_t linea
 		(*dem)[yp][nXSize-1] = Cell(linearData[yp * nXSize + (nXSize-1)], northeast, yp, nXSize-1);
 		yp++;
 	}
-	//boost::xtime xt;
-	//boost::xtime_get (&xt, boost::TIME_UTC);
-	//xt.sec += 300;
-	//boost::this_thread::sleep(xt); // debug sleep
+	cout << "linearTo2d.2.5\n";
+	if(firstRow)
+	{
+		boost::xtime xt;
+		boost::xtime_get (&xt, boost::TIME_UTC);
+		xt.sec += 1000;
+		boost::this_thread::sleep(xt); // debug sleep
+	}
+	cout << "linearTo2d.2.5.2\n";
 	int lastNormRow = (end==nYSize) ? end-1 : end;
 	for(; yp<lastNormRow; yp++)
 	{
+		cout << "linearTo2d.2.5.5\n";
 		(*dem)[yp][0] = Cell(linearData[yp * nXSize], west, yp, 0);
 		for(int xp = 1; xp<(nXSize-1); xp++)
 		{
@@ -349,6 +362,7 @@ void linearTo2d(int firstRow, int end, ip::managed_shared_memory::handle_t linea
 		}
 		(*dem)[yp][nXSize-1] = Cell(linearData[yp * nXSize + (nXSize-1)], east, yp, nXSize-1);
 	}
+	cout << "linearTo2d.2.6\n";
 	if(lastNormRow != end)
 	{
 		(*dem)[yp][0] = Cell(linearData[yp * nXSize], southwest, yp, 0);
@@ -358,6 +372,8 @@ void linearTo2d(int firstRow, int end, ip::managed_shared_memory::handle_t linea
 		}
 		(*dem)[yp][nXSize-1] = Cell(linearData[yp * nXSize + (nXSize-1)], southeast, yp, nXSize-1);
 	}
+	cout << "linearTo2d.3\n";
+	delete segment;
 }
 
 void writeFiles(Matrix* dem, fs::ofstream& sdem, fs::ofstream& meta, fs::ofstream& fdir, fs::ofstream& ftotal, Metadata& iniData)
@@ -409,13 +425,14 @@ void writeFiles(Matrix* dem, fs::ofstream& sdem, fs::ofstream& meta, fs::ofstrea
 void writeStdOut(Metadata iniData)
 {
 	Matrix *dem=NULL;
+	ip::managed_shared_memory *segment=NULL;
 	try{
 		//Special shared memory where we can construct objects associated with a name.
 		//Connect to the already created shared memory segment+initialize needed resources
-		ip::managed_shared_memory segment(ip::open_only, "stream_finder_dem");  //segment name
+		segment = new ip::managed_shared_memory(ip::open_only, "stream_finder_dem");  //segment name
 
 		//Find the vector using the c-string name
-		dem = segment.find<Matrix>("DEM").first;
+		dem = segment->find<Matrix>("DEM").first;
 	}
 	catch(...){
 		throw;
@@ -461,4 +478,5 @@ void writeStdOut(Metadata iniData)
 		numOut = (*dem)[row][nXSize-1].flowTotal().size();
 		cout << numOut << '\n';
 	}
+	delete segment;
 }

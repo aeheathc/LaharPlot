@@ -94,13 +94,14 @@ ip::set<Point,PointShmemAllocator>& Cell::flowTotal(int reserveSpace)
 		new ip::managed_shared_memory(ip::open_only,shmemName.c_str());
 	ip::set<Point,PointShmemAllocator>* flowTot =
 		segment->find<ip::set<Point,PointShmemAllocator> >("points").first;
-	delete segment;
 	if(segment->get_size() < (sizeof(flowTot)+sizeof(Point)*(reserveSpace+5)))
 	{
+		delete segment; segment=0;
 		flowTot = NULL;
 		ip::managed_shared_memory::grow(shmemName.c_str(), sizeof(Point)*(reserveSpace+20));
 		return flowTotal();
 	}
+	delete segment;
 	return *flowTot;
 }
 
