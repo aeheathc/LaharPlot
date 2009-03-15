@@ -20,6 +20,10 @@
 #ifndef CELL_H
 #define CELL_H
 
+#include <cmath>
+
+#include <algorithm>
+#include <iostream>
 #include <sstream>
 #include <string>
 
@@ -44,33 +48,31 @@ class Point
 	public:
 	int x,y;
 	Point(int xIn, int yIn): x(xIn),y(yIn) {}
-	//Point(): x(-1),y(-1) {}
+	Point(): x(-1),y(-1) {}
+	Point& operator=(const Point& src) {x = src.x; y = src.y; return *this;}
 };
 
 //	Cell represents one space on the DEM.
 class Cell
 {
 	public:
+	static PointShmemAllocator* alloc_inst;
+	
 	float height;		//Elevation in meters
-	Point location;		//x,y location of this cell within the DEM
+	int y,x;			//x,y location of this cell within the DEM
 	direction flowDir;	//the direction in which THIS cell flows
+
+	//the list of cells that flow into this one.
+	ip::set<Point, PointShmemAllocator> flowTotal;
+
+	void fill(float elevation, int y, int x, direction dir = none);	
 	
-	/*
-		Grab a reference to the list of cells that flow into this one.
-		Guarantee enough space to add a Point.
-	*/
-	ip::set<Point,PointShmemAllocator>& flowTotal();
-	//same as above, but ensure there is extra space to add reserveSpace points
-	ip::set<Point,PointShmemAllocator>& flowTotal(int reserveSpace);
-	
-	Cell(float elevation, int x, int y);
-	Cell(float elevation, direction dir, int x, int y);
+	Cell(float elevation, int y, int x);
+	Cell(float elevation, int y, int x, direction dir);
 	Cell();
 	~Cell();
 	
-	private:
-	//The name of the shared memory space that holds the total flow list
-	string shmemName;
+	Cell& operator=(const Cell& src);	
 };
 
 #endif

@@ -19,90 +19,40 @@
 
 #include "cell.h"
 
-/*
-	In these constructors, we have to create a seperate shared memory space to
-	store the Set of points "flowTotal" (see definition comments), because the
-	shared memory space that holds the Cells will be full and flowTotal needs
-	to have variable size. The shared memory space is named based on the
-	x,y location of this Cell.
-*/
-Cell::Cell(float elevation, int x, int y)
-	: height(elevation), flowDir(none), location(Point(x,y))
-{
-	ostringstream shmemNameBuild;
-	shmemNameBuild << "Cell." << x << ',' << y;
-	shmemName = shmemNameBuild.str();
-	ip::managed_shared_memory segment(	ip::open_or_create,shmemName.c_str(),
-										sizeof(ip::set<Point,PointShmemAllocator>)+sizeof(Point)*20);
-	const PointShmemAllocator alloc_inst(segment.get_segment_manager());
-	segment.construct<ip::set<Point,PointShmemAllocator> >("points")(alloc_inst);
-}
+PointShmemAllocator* Cell::alloc_inst=NULL;
+
+Cell::Cell(float elevation, int yIn, int xIn)
+	: height(elevation), flowDir(none), x(xIn), y(yIn), flowTotal(*alloc_inst)
+{}
 
 // TODO: use chained constructors when that functionality comes in C++09
-Cell::Cell(float elevation, direction dir, int x, int y)
-	: height(elevation), flowDir(dir), location(Point(x,y))
-{
-	ostringstream shmemNameBuild;
-	shmemNameBuild << "Cell." << x << ',' << y;
-	shmemName = shmemNameBuild.str();
-	ip::managed_shared_memory segment(	ip::open_or_create,shmemName.c_str(),
-										sizeof(ip::set<Point,PointShmemAllocator>)+sizeof(Point)*20);
-	const PointShmemAllocator alloc_inst(segment.get_segment_manager());
-	segment.construct<ip::set<Point,PointShmemAllocator> >("points")(alloc_inst);
-}
+Cell::Cell(float elevation, int yIn, int xIn, direction dir)
+	: height(elevation), flowDir(dir), x(xIn), y(yIn), flowTotal(*alloc_inst)
+{}
 
-Cell::Cell()
-	: height(0), flowDir(none), location(Point(-1,-1))
+Cell::Cell() : height(0), flowDir(none), x(-1), y(-1), flowTotal(*alloc_inst)
 {}
 
 Cell::~Cell()
+{}
+
+void Cell::fill(float elevation, int y, int x, direction dir)
 {
-	/*
-		if this is a dummy object don't bother trying to delete a 
-		shared memory space that isn't going to exist
-	*/
-	if(!shmemName.length()) return;
-	
-	/*
-		create inner scope so the segment handle is destroyed before the actual
-		shared memory space is destroyed
-	*/
-	{
-		ip::managed_shared_memory segment(ip::open_only,shmemName.c_str());
-		segment.destroy<ip::set<Point,PointShmemAllocator> >("points");
-	}
-	ip::shared_memory_object::remove(shmemName.c_str());
+	height = elevation;
+	this->y = y;
+	this->x = x;
+	flowDir = dir;
 }
 
-/*
-	We must regulate access to the set so that we can expand the size of the
-	shared memory as items are added. We can't keep a pointer around because
-	resizing the shared memory requires that nobody has their hands in it.
-*/
-ip::set<Point,PointShmemAllocator>& Cell::flowTotal()
+Cell& Cell::operator=(const Cell& src)
 {
-	return flowTotal(0);
-}
-
-ip::set<Point,PointShmemAllocator>& Cell::flowTotal(int reserveSpace)
-{
-	/*
-		segment is created on the stack so we can delete it right away in case
-		we need to resize the shared memory space
-	*/
-	ip::managed_shared_memory* segment =
-		new ip::managed_shared_memory(ip::open_only,shmemName.c_str());
-	ip::set<Point,PointShmemAllocator>* flowTot =
-		segment->find<ip::set<Point,PointShmemAllocator> >("points").first;
-	if(segment->get_size() < (sizeof(flowTot)+sizeof(Point)*(reserveSpace+5)))
-	{
-		delete segment; segment=0;
-		flowTot = NULL;
-		ip::managed_shared_memory::grow(shmemName.c_str(), sizeof(Point)*(reserveSpace+20));
-		return flowTotal();
-	}
-	delete segment;
-	return *flowTot;
+	height = src.height;
+	x = src.x;
+	y = src.y;
+	flowDir = src.flowDir;
+	flowTotal.clear();
+	copy( src.flowTotal.begin(), src.flowTotal.end(), flowTotal.begin() );
+	return *this;
 }
 
 direction intDirection(int dirIn)
