@@ -176,6 +176,11 @@ int main(int argc, char* argv[])
 		return 1;
 	}
 	
+	//Fill in the sinkholes!
+	if(verbose) cout << "Filling sinkholes...\n";
+	FillSinks filler(pafScanline, nYSize, nXSize, 1);
+	filler.fill();	
+	
 	//We have the data from the file, now we make the data 2-dimensional for easier reading.
 	//The cells on the outside are made with default outward flow directions.
 	if(threads > nYSize) threads = nYSize;
@@ -186,6 +191,7 @@ int main(int argc, char* argv[])
 			<< (nXSize*nYSize) << "\nBuilding DEM...\n";
 	}
 	boost::thread_group demFiller;
+	linear(dem,0,0,nXSize);	//initialize static variable inside linear()
 	for(int thread=0; thread<(threads-1); thread++)
 	{
 		int firstRow = thread*rowsPerThread;
@@ -221,6 +227,15 @@ int main(int argc, char* argv[])
 		
 		//make flow total grid, which will also reveal sinkholes.
 		if(verbose) cout << "Finding flow totals...\n";
+		boost::thread_group flowTotalCalc;
+		for(int thread=0; thread<(threads-1); thread++)
+		{
+			int firstRow = thread*rowsPerThread;
+			flowTotalCalc.add_thread(new boost::thread(flowTrace, firstRow, firstRow+rowsPerThread));
+		}
+		flowTotalCalc.add_thread(new boost::thread(flowTrace, (threads-1)*rowsPerThread, nYSize));
+		flowTotalCalc.join_all();
+		
 		
 	}while(sinkholes == true);
 	
@@ -492,8 +507,10 @@ void writeStdOut(Metadata iniData)
 	delete segment;
 }
 
-template<typename T>
-T& linear(T *array, int y, int x)
+void flowTrace(int firstRow, int end)
 {
-	return array[y*nXSize+x];
+}
+
+void follow(Cell* dem, int x, int y)
+{
 }

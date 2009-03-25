@@ -40,6 +40,8 @@
 #include <gdal_priv.h>
 
 #include "cell.h"
+#include "util.h"
+#include "fill.h"
 
 using namespace std;
 namespace po = boost::program_options;
@@ -68,9 +70,12 @@ void linearTo2d(int firstRow, int end, ip::managed_shared_memory::handle_t linea
 void flowDirection(int firstRow, int end);
 direction greatestSlope(Cell* dem, int x, int y, int radius);
 
-//Use a 2D index over a 1D array.
-template<typename T>
-T& linear(T *array, int x, int y);
+/*	Creates flow records for the Flow Total Grid, with starting cells in rows
+	firstRow to (end-1). Usually called multiple times in parallel, on different
+	parts of the DEM.
+*/
+void flowTrace(int firstRow, int end);
+void follow(Cell* dem, int x, int y);
 
 void writeFiles(Cell* dem, fs::ofstream& sdem, fs::ofstream& meta,
 				fs::ofstream& fdir, fs::ofstream& ftotal, Metadata& iniData);
