@@ -1,13 +1,13 @@
 /***************************************************************
- * Name:      sDEM.cpp
- * Purpose:   Handles SDEM files, and functions
+ * Name:      tsv.cpp
+ * Purpose:   Handles tsv files, and functions
  * Author:     ()
- * Created:   2009-02-19
+ * Created:   2009-03-16
  * Copyright:  ()
  * License:
  **************************************************************/
 
-#include "sDEM.h"
+#include "tsv.h"
 
 #include <string>
 #include <iostream>
@@ -15,48 +15,49 @@
 #include <fstream>
 using namespace std;
 
-string sDEMFileName;
-float demMax = 0, demMin = 0;
+string tsvFileName;
+float tsvMax = 0, tsvMin = 0;
 
-sDEM::sDEM(wxString filename)
+tsv::tsv(wxString filename)
 {
-    sDEMFileName = filename.mb_str(wxConvUTF8);
+    tsvFileName = filename.mb_str(wxConvUTF8);
 }
 
-sDEM::~sDEM()
+tsv::~tsv()
 {
 }
 
-float sDEM::getMax()
+float tsv::getMin()
 {
-    return demMax;
+	return tsvMin;
 }
 
-float sDEM::getMin()
+float tsv::getMax()
 {
-    return demMin;
+	return tsvMax;
 }
 
-void sDEM::setFileName(wxString filename)
+void tsv::setFileName(wxString filename)
 {
-    sDEMFileName = filename.mb_str(wxConvUTF8);
-    loadSDEM();
+    tsvFileName = filename.mb_str(wxConvUTF8);
+    loadtsv();
 }
 
-const char* sDEM::getFileName()
+const char* tsv::getFileName()
 {
-	return sDEMFileName.c_str();
+	return tsvFileName.c_str();
 }
 
-void sDEM::loadSDEM()
+void tsv::loadtsv()
 {
     // Initialize variables
 	float max = 0, min = 0;
 	bool haveMin = false;
 	string line;
+	clear();
 
 	// Input filestream
-	ifstream file (sDEMFileName.c_str());
+	ifstream file (tsvFileName.c_str());
 
 	// Parse SDEM
 	while (!file.eof())
@@ -65,7 +66,7 @@ void sDEM::loadSDEM()
 		getline (file,line);
 
 		// temp vector to convert from tsv
-		vector<float> demLine;
+		list<float> tsvLine;
 
 		// counters
 		unsigned int i = 0, j = 0;
@@ -85,24 +86,29 @@ void sDEM::loadSDEM()
 			if (temp > max) { max = temp; }
 			if (!haveMin || temp < min)
 			{
-				min = temp;
-				haveMin = true;
+				// non-existent point correction
+				if (temp != -32766)
+				{
+					min = temp;
+					haveMin = true;
+				}
 			}
 
 			// store and incriment
-			demLine.push_back(temp);
+			tsvLine.push_back(temp);
 			j++;
 		}
 
 		// insert line to sdem
-		 if (demLine.size() > 0)
-			push_back(demLine);
+		if (tsvLine.size() > 0)
+			push_back(tsvLine);
 	}
 
 	// close the sdem
 	file.close();
 
 	// store max/min
-	demMax = max;
-	demMin = min;
+	tsvMax = max;
+	tsvMin = min;
 }
+

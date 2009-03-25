@@ -12,7 +12,7 @@
 
 #include "laharPlotApp.h"
 #include "GUIFrame.h"
-#include "sDEM.h"
+#include "tsv.h"
 
 class laharPlotFrame: public GUIFrame
 {

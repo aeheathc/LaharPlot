@@ -19,6 +19,7 @@
 
 #include <wx/dcclient.h>
 #include <wx/dcmemory.h>
+#include <wx/progdlg.h>
 #include <wx/msgdlg.h>
 #include <wx/filedlg.h>
 #include <wx/filename.h>
@@ -26,14 +27,16 @@
 #include <string>
 using namespace std;
 
-sDEM* curSDEM = new sDEM(_(""));
+tsv* curSDEM;
 wxBitmap* image;
 wxBitmap* display;
-float curZoom = 1;
+float curZoom;
 
 laharPlotFrame::laharPlotFrame(wxFrame *frame)
     : GUIFrame(frame)
 {
+	curSDEM = new tsv(_(""));
+	curZoom = 1;
 #if wxUSE_STATUSBAR
     statusBar->SetStatusText(_("LaharPlot"), 0);
     statusBar->SetStatusText(_(""), 1);
@@ -68,7 +71,7 @@ void laharPlotFrame::OnPaint(wxPaintEvent &event)
 	wxPaintDC dc(SDEMScroll);
 	SDEMScroll->DoPrepareDC(dc);
 
-	// if the image is not blank, display it
+	// if the image exists, display it
 	if (display != NULL)
 		dc.DrawBitmap(*display, 0, 0, false);
 }
@@ -76,21 +79,28 @@ void laharPlotFrame::OnPaint(wxPaintEvent &event)
 void laharPlotFrame::OnLoadSdem(wxCommandEvent &event)
 {
 	// Open file dialog box
-	wxFileDialog* openSdem = new wxFileDialog(this, _("Choose a File"), _(""), _(""), _("SDEM files (*-sdem.tsv)|*-sdem.tsv|All Files (*.*)|*.*"), wxOPEN, wxDefaultPosition);
+	wxFileDialog openSdem (this, _("Choose a File"), _(""), _(""), _("SDEM files (*-sdem.tsv)|*-sdem.tsv|All Files (*.*)|*.*"), wxOPEN, wxDefaultPosition);
 
 	// Show dialog box
-	if ( openSdem->ShowModal() == wxID_OK )
+	if ( openSdem.ShowModal() == wxID_OK )
 	{
 		// get path and filename
 		wxString path;
-		path.append( openSdem->GetDirectory() );
+		path.append( openSdem.GetDirectory() );
 		path.append( wxFileName::GetPathSeparator() );
-		path.append( openSdem->GetFilename() );
+		path.append( openSdem.GetFilename() );
+
+		// progress bar
+		wxProgressDialog sdemLoadBar (_("Loading SDEM"), _("Parsing TSV file"), 100, this, wxPD_APP_MODAL | wxPD_AUTO_HIDE);
+		sdemLoadBar.SetSize(300, 120);
 
 		// set current file
 		curSDEM->setFileName(path);
 
-		int sw = curSDEM->at(0).size();
+		// update progress
+		sdemLoadBar.Update(50,_("Drawing SDEM"));
+
+		int sw = curSDEM->front().size();
 		int sh = curSDEM->size();
 
 		// create dc, and bitmap
@@ -102,12 +112,16 @@ void laharPlotFrame::OnLoadSdem(wxCommandEvent &event)
 		displaySDEM(&memdc);
 		display = image;
 
-		// set and refresh scrollwindow
-		SDEMScroll->SetScrollbars(20, 20, sw, sh, 0, 0);
-		SDEMScroll->Refresh();
-	}
+		// unselect bitmap, for safe destruction
+		memdc.SelectObject(wxNullBitmap);
 
-	delete openSdem;
+		// set and refresh scrollwindow
+		SDEMScroll->SetScrollbars(1, 1, sw, sh, 0, 0);
+		SDEMScroll->Refresh();
+
+		// update progress
+		sdemLoadBar.Update(100);
+	}
 }
 
 void laharPlotFrame::OnScrollwheel(wxMouseEvent &event)
@@ -126,10 +140,16 @@ void laharPlotFrame::OnScrollwheel(wxMouseEvent &event)
 
 void laharPlotFrame::Zoom(float zChange, wxCoord x, wxCoord y)
 {
-	if (image != NULL)
+	if (image != NULL && ((curZoom < 8 && zChange > 1) || (curZoom > .125 && zChange < 1)))
 	{
+		wxProgressDialog zoomBar (_("Zooming"), _("Scaling"), 100, this, wxPD_APP_MODAL | wxPD_AUTO_HIDE);
+
 		// change current zoom level
 		curZoom *= zChange;
+		if (curZoom > 8)
+			curZoom = 8;
+		if (curZoom < .125)
+			curZoom = .125;
 
 		// zoom image
 		wxImage wxi = image->ConvertToImage();
@@ -149,6 +169,8 @@ void laharPlotFrame::Zoom(float zChange, wxCoord x, wxCoord y)
 		// set scrollbars and refresh
 		SDEMScroll->SetScrollbars(1, 1, zwidth, zheight, x, y);
 		SDEMScroll->Refresh();
+
+		zoomBar.Update(100);
 	}
 }
 
@@ -168,20 +190,33 @@ void laharPlotFrame::displaySDEM(wxDC *dc)
 		if (diff > 0)
 			incr = 255 / diff;
 
-		// go through 2 dimensional vector
+		list< list<float> >::iterator demLine = curSDEM->begin();
+
+		// go through 2 dimensional list
 		for (unsigned int i = 0; i < curSDEM->size(); i++)
 		{
-			vector<float> demLine = curSDEM->at(i);
-			for (unsigned int j = 0; j < demLine.size(); j++)
+			list<float> dl = *demLine;
+			list<float>::iterator elem = dl.begin();
+			for (unsigned int j = 0; j < dl.size(); j++)
 			{
-				// calculate the shade of point
-				int color = 255 - int ((sdemMax - demLine.at(j)) * incr);
+				// figure out shade of  point
+				int color;
+				if (*elem == -32766)
+					color = 0;
+				else
+					color = 255 - int ((sdemMax - *elem) * incr);
 
 				// set color and draw point
 				wxColor pixcolor (color,color,color);
 				dc->SetPen(pixcolor);
 				dc->DrawPoint(j, i);
+
+				// move iterator
+				elem++;
 			}
+
+			// move iterator
+			demLine++;
 		}
 	}
 }
