@@ -21,6 +21,10 @@
 #include <wx/scrolwin.h>
 #include <wx/sizer.h>
 #include <wx/frame.h>
+#include <wx/stattext.h>
+#include <wx/textctrl.h>
+#include <wx/button.h>
+#include <wx/dialog.h>
 
 ///////////////////////////////////////////////////////////////////////////
 
@@ -28,33 +32,67 @@
 #define idMenuQuit 1001
 #define idMenuAbout 1002
 #define idSDEMScroll 1003
+#define idDEMDialog 1004
+#define idConvert 1005
 
 ///////////////////////////////////////////////////////////////////////////////
 /// Class GUIFrame
 ///////////////////////////////////////////////////////////////////////////////
-class GUIFrame : public wxFrame
+class GUIFrame : public wxFrame 
 {
 	private:
-
+	
 	protected:
 		wxMenuBar* mbar;
 		wxMenu* fileMenu;
 		wxMenu* helpMenu;
 		wxStatusBar* statusBar;
 		wxScrolledWindow* SDEMScroll;
-
+		
 		// Virtual event handlers, overide them in your derived class
 		virtual void OnClose( wxCloseEvent& event ){ event.Skip(); }
+		virtual void OnConvertDEM( wxCommandEvent& event ){ event.Skip(); }
 		virtual void OnLoadSdem( wxCommandEvent& event ){ event.Skip(); }
 		virtual void OnQuit( wxCommandEvent& event ){ event.Skip(); }
 		virtual void OnAbout( wxCommandEvent& event ){ event.Skip(); }
 		virtual void OnScrollwheel( wxMouseEvent& event ){ event.Skip(); }
 		virtual void OnPaint( wxPaintEvent& event ){ event.Skip(); }
-
-
+		
+	
 	public:
-		GUIFrame( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = wxT("wxWidgets Application Template"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( 481,466 ), long style = wxDEFAULT_FRAME_STYLE|wxTAB_TRAVERSAL );
+		GUIFrame( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = wxT("LaharPlot"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( 500,500 ), long style = wxDEFAULT_FRAME_STYLE|wxTAB_TRAVERSAL );
 		~GUIFrame();
+	
+};
+
+///////////////////////////////////////////////////////////////////////////////
+/// Class DEMDialog
+///////////////////////////////////////////////////////////////////////////////
+class DEMDialog : public wxDialog 
+{
+	private:
+	
+	protected:
+		wxStaticText* m_staticText3;
+		wxTextCtrl* DEMTextBox;
+		wxButton* m_button3;
+		wxStaticText* m_staticText4;
+		wxTextCtrl* OutputTextBox;
+		wxButton* m_button4;
+		
+		
+		wxButton* m_button6;
+		
+		// Virtual event handlers, overide them in your derived class
+		virtual void OnBrowseDEM( wxCommandEvent& event ){ event.Skip(); }
+		virtual void OnOutputBrowse( wxCommandEvent& event ){ event.Skip(); }
+		virtual void OnConvert( wxCommandEvent& event ){ event.Skip(); }
+		
+	
+	public:
+		DEMDialog( wxWindow* parent, wxWindowID id = idDEMDialog, const wxString& title = wxT("Convert DEM"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( 486,135 ), long style = wxDEFAULT_DIALOG_STYLE );
+		~DEMDialog();
+	
 };
 
 #endif //__GUIFrame__

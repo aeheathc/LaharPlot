@@ -16,10 +16,10 @@
 #endif //__BORLANDC__
 
 #include "laharPlotMain.h"
+#include "frameDEMDialog.h"
 
 #include <wx/dcclient.h>
 #include <wx/dcmemory.h>
-#include <wx/progdlg.h>
 #include <wx/msgdlg.h>
 #include <wx/filedlg.h>
 #include <wx/filename.h>
@@ -76,6 +76,12 @@ void laharPlotFrame::OnPaint(wxPaintEvent &event)
 		dc.DrawBitmap(*display, 0, 0, false);
 }
 
+void laharPlotFrame::OnConvertDEM(wxCommandEvent& event)
+{
+	frameDEMDialog demDlg (this);
+	demDlg.ShowModal();
+}
+
 void laharPlotFrame::OnLoadSdem(wxCommandEvent &event)
 {
 	// Open file dialog box
@@ -109,8 +115,9 @@ void laharPlotFrame::OnLoadSdem(wxCommandEvent &event)
 		memdc.SelectObject(*image);
 
 		// display SDEM on bitmap
-		displaySDEM(&memdc);
-		display = image;
+		displaySDEM(&memdc, &sdemLoadBar);
+		wxImage wxi = image->ConvertToImage();
+		display = new wxBitmap(wxi.Scale(image->GetWidth(), image->GetHeight()));
 
 		// unselect bitmap, for safe destruction
 		memdc.SelectObject(wxNullBitmap);
@@ -174,7 +181,7 @@ void laharPlotFrame::Zoom(float zChange, wxCoord x, wxCoord y)
 	}
 }
 
-void laharPlotFrame::displaySDEM(wxDC *dc)
+void laharPlotFrame::displaySDEM(wxDC *dc, wxProgressDialog* progDlg)
 {
     // check if sdem file has been loaded
     string file = curSDEM->getFileName();
@@ -217,6 +224,7 @@ void laharPlotFrame::displaySDEM(wxDC *dc)
 
 			// move iterator
 			demLine++;
+			progDlg->Update(50 + (i * (49.0 / curSDEM->size())));
 		}
 	}
 }

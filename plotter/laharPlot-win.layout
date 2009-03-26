@@ -1,25 +1,31 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
 <CodeBlocks_layout_file>
 	<ActiveTarget name="Debug" />
-	<File name="GUIFrame.cpp" open="1" top="0" tabpos="3">
-		<Cursor position="1580" topLine="10" />
+	<File name="GUIFrame.cpp" open="0" top="0" tabpos="3">
+		<Cursor position="2731" topLine="37" />
 	</File>
-	<File name="GUIFrame.h" open="1" top="0" tabpos="4">
-		<Cursor position="1956" topLine="28" />
+	<File name="GUIFrame.h" open="0" top="0" tabpos="4">
+		<Cursor position="1956" topLine="25" />
+	</File>
+	<File name="frameDEMDialog.cpp" open="1" top="0" tabpos="5">
+		<Cursor position="322" topLine="0" />
+	</File>
+	<File name="frameDEMDialog.h" open="1" top="0" tabpos="6">
+		<Cursor position="422" topLine="0" />
 	</File>
 	<File name="laharPlotApp.cpp" open="0" top="0" tabpos="0">
-		<Cursor position="484" topLine="0" />
+		<Cursor position="451" topLine="0" />
 	</File>
 	<File name="laharPlotMain.cpp" open="1" top="1" tabpos="1">
-		<Cursor position="2525" topLine="70" />
+		<Cursor position="5728" topLine="198" />
 	</File>
 	<File name="laharPlotMain.h" open="1" top="0" tabpos="2">
-		<Cursor position="383" topLine="1" />
+		<Cursor position="358" topLine="0" />
 	</File>
-	<File name="tsv.cpp" open="1" top="0" tabpos="5">
-		<Cursor position="1803" topLine="72" />
+	<File name="tsv.cpp" open="1" top="0" tabpos="3">
+		<Cursor position="748" topLine="18" />
 	</File>
-	<File name="tsv.h" open="1" top="0" tabpos="6">
+	<File name="tsv.h" open="1" top="0" tabpos="4">
 		<Cursor position="364" topLine="0" />
 	</File>
 </CodeBlocks_layout_file>

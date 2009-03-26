@@ -62,6 +62,8 @@
 		<Unit filename="GUIFrame.cpp" />
 		<Unit filename="GUIFrame.h" />
 		<Unit filename="WxWizFrame.fbp" />
+		<Unit filename="frameDEMDialog.cpp" />
+		<Unit filename="frameDEMDialog.h" />
 		<Unit filename="laharPlotApp.cpp" />
 		<Unit filename="laharPlotApp.h" />
 		<Unit filename="laharPlotMain.cpp" />

@@ -1,5 +1,5 @@
 # depslib dependency file v1.0
-1236278539 source:c:\users\tim\documents\codeblocks\laharplot\laharplotapp.cpp
+1238043908 source:c:\users\tim\documents\codeblocks\laharplot\laharplotapp.cpp
 	"wx_pch.h"
 	"laharPlotApp.h"
 	"laharPlotMain.h"
@@ -529,12 +529,13 @@
 1186436394 c:\wxwidgets-2.8.9\include\wx\univ\theme.h
 	"wx/string.h"
 
-1237472305 c:\users\tim\documents\codeblocks\laharplot\laharplotmain.h
+1238050779 c:\users\tim\documents\codeblocks\laharplot\laharplotmain.h
+	<wx/progdlg.h>
 	"laharPlotApp.h"
 	"GUIFrame.h"
 	"tsv.h"
 
-1236278763 c:\users\tim\documents\codeblocks\laharplot\guiframe.h
+1238047374 c:\users\tim\documents\codeblocks\laharplot\guiframe.h
 	<wx/string.h>
 	<wx/bitmap.h>
 	<wx/image.h>
@@ -548,6 +549,10 @@
 	<wx/scrolwin.h>
 	<wx/sizer.h>
 	<wx/frame.h>
+	<wx/stattext.h>
+	<wx/textctrl.h>
+	<wx/button.h>
+	<wx/dialog.h>
 
 1194642980 c:\wxwidgets-2.8.9\include\wx\image.h
 	"wx/defs.h"
@@ -851,7 +856,7 @@
 
 1186436452 c:\wxwidgets-2.8.9\include\wx\msw\frame.h
 
-1236203182 source:c:\users\tim\documents\codeblocks\laharplot\guiframe.cpp
+1238047765 source:c:\users\tim\documents\codeblocks\laharplot\guiframe.cpp
 	"wx/wxprec.h"
 	<wx/wx.h>
 	"GUIFrame.h"
@@ -1782,9 +1787,10 @@
 
 1186436452 c:\wxwidgets-2.8.9\include\wx\msw\filedlg.h
 
-1237478579 source:c:\users\tim\documents\codeblocks\laharplot\laharplotmain.cpp
+1238046490 source:c:\users\tim\documents\codeblocks\laharplot\laharplotmain.cpp
 	"wx_pch.h"
 	"laharPlotMain.h"
+	"frameDEMDialog.h"
 	<wx/dcclient.h>
 	<wx/dcmemory.h>
 	<wx/progdlg.h>
@@ -1830,4 +1836,21 @@
 	"wx/defs.h"
 	"wx/progdlg.h"
 	"wx/dialog.h"
+
+1238039416 source:c:\users\tim\documents\codeblocks\laharplot\streamoptionsframe.cpp
+	"streamOptionsFrame.h"
+
+1238039416 c:\users\tim\documents\codeblocks\laharplot\streamoptionsframe.h
+	"GUIFrame.h"
+
+1238049908 source:c:\users\tim\documents\codeblocks\laharplot\framedemdialog.cpp
+	<wx/filedlg.h>
+	<wx/filename.h>
+	<wx/platinfo.h>
+	<wx/msgdlg.h>
+	<string>
+	"frameDEMDialog.h"
+
+1238046659 c:\users\tim\documents\codeblocks\laharplot\framedemdialog.h
+	"GUIFrame.h"
 
