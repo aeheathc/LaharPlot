@@ -34,9 +34,12 @@ void FillSinks::fill()
 	bool	something_done;
 	int		x, y, scan, ix, iy, i, it;
 	double	z, wz, wzn;
-
 	pW		= new float[cellsX*cellsY];
-	pBorder = new int[cellsX*cellsY];;
+	pBorder = new int[cellsX*cellsY];
+	
+	//initialize static variable inside linear()
+	linear(pBorder,0,0,cellsX);
+	linear(pW,0,0,cellsX);
 
 	for(i=0; i<8; i++)
 		epsilon[i] = minslope;
@@ -102,7 +105,7 @@ void FillSinks::fill()
 	if( something_done == false )
 		break;
 	}
-	
+
 	for(long long count = 0; count < cellsX*cellsY; count++) pDEM[count] = pW[count];
 
 	delete pW;
@@ -144,7 +147,6 @@ void FillSinks::initAltitude()
 {
 	bool	border;
 	int		x, y, i, ix, iy;
-
 	for(x=0; x<cellsX; x++)
 	{
 		for(y=0; y<cellsY; y++)
@@ -160,14 +162,16 @@ void FillSinks::initAltitude()
 					break;
 				}
 			}
-			
+
 			if( border == true )
 			{
 				linear(pBorder, y, x) = 1;
 				linear(pW, y, x) = linear(pDEM, y, x);
 			}
 			else
+			{
 				linear(pW, y, x) = 50000.0;
+			}
 		}
 	}
 }	

@@ -21,6 +21,7 @@
 #define FILLSINKS_H
 
 #include "util.h"
+using namespace std;
 
 /*	This algorithm fo fill sinkholes is an implementation of:
 	Planchon, O. & F. Darboux (2001):

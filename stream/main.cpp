@@ -176,10 +176,13 @@ int main(int argc, char* argv[])
 		return 1;
 	}
 	
+	linear(pafScanline,0,0,nXSize);	//initialize static variable inside linear()
+	linear(dem,0,0,nXSize);
+		
 	//Fill in the sinkholes!
 	if(verbose) cout << "Filling sinkholes...\n";
 	FillSinks filler(pafScanline, nYSize, nXSize, 1);
-	filler.fill();	
+	filler.fill();
 	
 	//We have the data from the file, now we make the data 2-dimensional for easier reading.
 	//The cells on the outside are made with default outward flow directions.
@@ -191,7 +194,7 @@ int main(int argc, char* argv[])
 			<< (nXSize*nYSize) << "\nBuilding DEM...\n";
 	}
 	boost::thread_group demFiller;
-	linear(dem,0,0,nXSize);	//initialize static variable inside linear()
+	
 	for(int thread=0; thread<(threads-1); thread++)
 	{
 		int firstRow = thread*rowsPerThread;
@@ -289,7 +292,7 @@ void flowDirection(int row, int end)
 	{
 		for(int column = 1; column < (nXSize-1); column++)
 		{
-			if(verbose) cout << "Cell: " << (row*nXSize+column) << "\n";
+			if(verbose) cout << '.';
 			direction celldir = none;
 			for(int radius = 1; celldir == none; radius++)
 			{
@@ -384,7 +387,7 @@ void linearTo2d(int firstRow, int end, ip::managed_shared_memory::handle_t linea
 		linear(dem,yp,0).fill(linear(linearData, yp, 0), yp, 0, west);
 		for(int xp = 1; xp<(nXSize-1); xp++)
 		{
-			if(verbose) cout << "Cell: " << (yp*nXSize+xp) << "\n";
+			if(verbose) cout << '-';
 			linear(dem,yp,xp).fill(linear(linearData, yp, xp), yp, xp);
 		}
 		linear(dem,yp,nXSize-1).fill(linear(linearData, yp, nXSize-1), yp, nXSize-1, east);
@@ -415,10 +418,10 @@ void writeFiles(Cell* dem, fs::ofstream& sdem, fs::ofstream& meta, fs::ofstream&
 	sdem.close();
 
 	//write Metadata INI
-	meta << "[Core]\npixel_size=" << iniData.physicalSize << "\nx_pixels="
-			<< nXSize << "\ny_pixels=" << nYSize << "\n[Display]\norigin_x="
-			<< iniData.originX << "\norigin_y=" << iniData.originY
-			<< "\nprojection=" << iniData.projection << "\n";
+	meta << fixed << setprecision(0) << "[Core]\npixel_size=" << iniData.physicalSize
+			<< "\nx_pixels=" << nXSize << "\ny_pixels=" << nYSize
+			<< "\n[Display]\norigin_x=" << iniData.originX << "\norigin_y="
+			<< iniData.originY << "\nprojection=" << iniData.projection << "\n";
 	meta.close();
 
 	//Write Flow Direction Grid
@@ -433,6 +436,7 @@ void writeFiles(Cell* dem, fs::ofstream& sdem, fs::ofstream& meta, fs::ofstream&
 	fdir.close();
 
 	//write Flow Total Grid
+	ftotal << fixed << setprecision(0);
 	for(int row=0; row<nYSize; row++)
 	{
 		int numOut = 0;
@@ -463,7 +467,8 @@ void writeStdOut(Metadata iniData)
 		cout << "Error accessing the shared memory objects in writeStdOut: " << e.what() << "\n";
 		throw;
 	}
-   
+
+	cout << fixed;
 	//write Simplified DEM
 	for(int row=0; row<nYSize; row++)
 	{
