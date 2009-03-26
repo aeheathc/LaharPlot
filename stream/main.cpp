@@ -293,52 +293,29 @@ void flowDirection(int row, int end)
 		for(int column = 1; column < (nXSize-1); column++)
 		{
 			if(verbose) cout << '.';
-			direction celldir = none;
-			for(int radius = 1; celldir == none; radius++)
-			{
-				celldir = greatestSlope(dem, row, column, radius);
-			}
-			linear(dem,row,column).flowDir = celldir;
+			linear(dem,row,column).flowDir = greatestSlope(dem, row, column);
 		}
 	}
 	delete segment;
 }
 
-direction greatestSlope(Cell* dem, int row, int column, int radius)
+direction greatestSlope(Cell* dem, int row, int column)
 {
-	/*
-	  When this function claims that no single direction has the greatest slope,
-	  it is called again with a larger search radius. If the radius gets so
-	  large that it goes past the edge of the DEM, we stop and use the direction
-	  toward the nearest edge as this cell's flow direction.
-	*/
-	if(radius > row) return north;
-	if(radius > column) return west;
-	if(radius + row >= nYSize) return south;
-	if(radius + column >= nXSize) return east;
-	vector<float>* slopes = new vector<float>(8,0);
-	(*slopes)[north]	= linear(dem,row+radius,column).height			- linear(dem,row-radius,column).height;
-	(*slopes)[northeast]= linear(dem,row+radius,column-radius).height	- linear(dem,row-radius,column+radius).height;
-	(*slopes)[east]		= linear(dem,row,column-radius).height			- linear(dem,row,column+radius).height;
-	(*slopes)[southeast]= linear(dem,row-radius,column-radius).height	- linear(dem,row+radius,column+radius).height;
-	(*slopes)[south]	= -(*slopes)[north];
-	(*slopes)[southwest]= -(*slopes)[northeast];
-	(*slopes)[west]		= -(*slopes)[east];
-	(*slopes)[northwest]= -(*slopes)[southeast];
-	unsigned short maxcount=1;
+	vector<float> slopes(8,0);
+	slopes[north]		= linear(dem,row+1,column).height	- linear(dem,row-1,column).height;
+	slopes[northeast]	= linear(dem,row+1,column-1).height	- linear(dem,row-1,column+1).height;
+	slopes[east]		= linear(dem,row,column-1).height	- linear(dem,row,column+1).height;
+	slopes[southeast]	= linear(dem,row-1,column-1).height	- linear(dem,row+1,column+1).height;
+	slopes[south]		= -slopes[north];
+	slopes[southwest]	= -slopes[northeast];
+	slopes[west]		= -slopes[east];
+	slopes[northwest]	= -slopes[southeast];
 	int max=north;
 	for(int dir=northeast; dir < none; dir++)
 	{
-		if((*slopes)[dir] > (*slopes)[max])
-		{
+		if(slopes[dir] > slopes[max])
 			max = dir;
-			maxcount = 1;
-		}else if((*slopes)[dir] == (*slopes)[max]){
-			maxcount++;
-		}
 	}
-	delete slopes;
-	if(maxcount > 1) return none;
 	return intDirection(max);
 }
 

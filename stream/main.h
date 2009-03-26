@@ -69,7 +69,7 @@ void linearTo2d(int firstRow, int end, ip::managed_shared_memory::handle_t linea
 	parts of the DEM.
 */
 void flowDirection(int firstRow, int end);
-direction greatestSlope(Cell* dem, int x, int y, int radius);
+direction greatestSlope(Cell* dem, int x, int y);
 
 /*	Creates flow records for the Flow Total Grid, with starting cells in rows
 	firstRow to (end-1). Usually called multiple times in parallel, on different
