@@ -31,6 +31,8 @@
 #include <boost/interprocess/containers/set.hpp>
 #include <boost/interprocess/managed_shared_memory.hpp>
 
+#include "util.h"
+
 using namespace std;
 namespace ip = boost::interprocess;
 

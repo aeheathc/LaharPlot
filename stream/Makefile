@@ -23,7 +23,7 @@ all: main.cpp main.h cell.o fill.o util.h
 fill.o: fill.cpp fill.h util.h
 	g++ fill.cpp -c
 
-cell.o: cell.cpp cell.h
+cell.o: cell.cpp cell.h util.h
 	g++ cell.cpp -c $(paths)
 
 clean:
