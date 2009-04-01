@@ -61,7 +61,7 @@ void FillSinks::fill()
 				dryUpwardCell(x, y);
 		}
 	}
-
+	cout << "fill.1\n";
 	for(it=0; it<1000; it++)
 	{
 		for(scan=0; scan<8; scan++)					// Stage 2, Section 2
@@ -72,17 +72,22 @@ void FillSinks::fill()
 
 			do 
 			{
+				cout << "fill.2\n";
 				if((wz = linear(pW, R, C)) > (z = linear(pDEM, R, C)))
 				{
+					cout << "fill.3\n";
 					for(i=0; i<8; i++)
 					{
+						cout << "fill.4\n";
 						ix	= neighborX(i, C);
 						iy	= neighborY(i, R);	
 
 						if(ix>=0 && iy>=0 && ix<cellsX && iy<cellsY)
 						{
+							cout << "fill.5\n";
 							if( z >= (wzn = (linear(pW, iy, ix) + epsilon[i])) )	// operation 1
 							{
+								cout << "fill.6\n";
 								linear(pW, R, C) = z;
 								something_done = true;
 								dryUpwardCell(C, R);
@@ -90,21 +95,27 @@ void FillSinks::fill()
 							}
 							if( wz > wzn )											// operation 2
 							{
+								cout << "fill.7\n";
 								linear(pW, R, C) = wzn;
 								something_done = true;
 							}
+							cout << "fill.8\n";
 						}
+						cout << "fill.8.5\n";
 					}
+					cout << "fill.9\n";
 				}
-			}while( nextCell(scan) );
-
-			if( something_done == false )
-				break;
+				cout << "fill.10\n";
+			}while(nextCell(scan));
+			cout << "fill.11\n";
+			if(something_done == false) break;
+			cout << "fill.12\n";
 		}
-
-	if( something_done == false )
-		break;
+		cout << "fill.13\n";
+		if(something_done == false) break;
+		cout << "fill.14\n";
 	}
+	cout << "fill.15\n";
 
 	for(long long count = 0; count < cellsX*cellsY; count++) pDEM[count] = pW[count];
 

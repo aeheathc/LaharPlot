@@ -20,6 +20,8 @@
 #ifndef FILLSINKS_H
 #define FILLSINKS_H
 
+#include <iostream>
+
 #include "util.h"
 using namespace std;
 

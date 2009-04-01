@@ -44,24 +44,11 @@ enum direction{north, northeast, east, southeast, south, southwest, west, northw
 direction intDirection(int dirIn);
 void flow(Point& current, direction dir);
 
-class Point
-{
-	public:
-	int row,column;
-	Point(int rIn, int cIn): row(rIn),column(cIn) {}
-	Point(): row(-30000),column(-30000) {}
-	Point(const Point& src): row(src.row),column(src.column) {}
-	Point& operator=(const Point& src)
-		{row = src.row; column = src.column; return *this;}
-	bool operator==(const Point& src) const
-		{return row==src.row && column==src.column;}
-};
-
 //	Cell represents one space on the DEM.
 class Cell
 {
 	public:
-	static PointShmemAllocator alloc_inst;
+	static PointShmemAllocator* alloc_inst;
 	
 	float height;		//Elevation in meters
 	int y,x;			//x,y location of this cell within the DEM
@@ -78,6 +65,19 @@ class Cell
 	~Cell();
 	
 	Cell& operator=(const Cell& src);	
+};
+
+class Point
+{
+	public:
+	int row,column;
+	Point(int rIn, int cIn): row(rIn),column(cIn) {}
+	Point(): row(-30000),column(-30000) {}
+	Point(const Point& src): row(src.row),column(src.column) {}
+	Point& operator=(const Point& src)
+		{row = src.row; column = src.column; return *this;}
+	bool operator==(const Point& src) const
+		{return row==src.row && column==src.column;}
 };
 
 //Use the values of a Point as a 2D index into a 1D array.

@@ -138,8 +138,7 @@ int main(int argc, char* argv[])
 		segment = new ip::managed_shared_memory(ip::create_only,
 							"stream_finder_dem",		//segment name
 							matrixBytes+linearBytes+flowBytes+1000);	//segment size in bytes
-		PointShmemAllocator alloc_inst = segment->get_segment_manager();
-		Cell::alloc_inst = alloc_inst;
+		Cell::alloc_inst = new PointShmemAllocator(segment->get_segment_manager());
 		dem = segment->construct<Cell>("DEM")[cellsX * cellsY]();
 		pafScanline = (float*)segment->allocate(linearBytes);
 		linearHandle = segment->get_handle_from_address(pafScanline);
@@ -240,6 +239,7 @@ int main(int argc, char* argv[])
 	writeout.join_all();
 	
 	//Free shared memory
+	delete Cell::alloc_inst;
 	segment->destroy<Cell>("DEM");
 	delete segment;
 	ip::shared_memory_object::remove("stream_finder_dem");
@@ -535,9 +535,11 @@ void follow(Cell* dem, int row, int column)
 			throw oneBFG;
 		
 		//insert the last cell's flow records into this one
-		linear(dem, current).flowTotal.insert(
-			linear(dem, last).flowTotal.begin(),
-			linear(dem, last).flowTotal.end() );
+		for(ip::set<Point, PointShmemAllocator>::iterator iter = linear(dem, last).flowTotal.begin(); iter != linear(dem, last).flowTotal.end(); iter++)
+		{
+			linear(dem, current).flowTotal.insert(*iter);
+		}
+		//linear(dem, current).flowTotal.insert(linear(dem, last).flowTotal.begin(),linear(dem, last).flowTotal.end());
 		
 		last = current;
 	}while(row>=0 && row<nYSize && column>=0 && column<nYSize);

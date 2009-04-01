@@ -6,7 +6,7 @@ paths = -Ic:/lib/gdal/include -Ic:/lib/boost/boost_$(boostversion)_0 -Lc:/lib/gd
 
 #we don't use all the recommended warns just because the 3rd party libraries
 #generate a ton of warnings due to poor coding standards
-warns = -Wall -ansi -Wcast-align -Wcast-qual -Wchar-subscripts -Winline \
+warns = -Wall -Wcast-align -Wcast-qual -Wchar-subscripts -Winline \
 		-Wpointer-arith -Wwrite-strings -Wno-long-long
 
 all: main.cpp main.h cell.o fill.o util.h
