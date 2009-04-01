@@ -134,11 +134,12 @@ int main(int argc, char* argv[])
 	try{
 		size_t matrixBytes = sizeof(Cell) * cellsX * cellsY;
 		size_t linearBytes = sizeof(float) * cellsX * cellsY;
+		size_t flowBytes = (sizeof(Point) * cellsX * cellsY * (cellsX * cellsY / 100 + 1)) - ( linearBytes<flowBytes?linearBytes:0);
 		segment = new ip::managed_shared_memory(ip::create_only,
 							"stream_finder_dem",		//segment name
-							matrixBytes+linearBytes+1000);	//segment size in bytes
+							matrixBytes+linearBytes+flowBytes+1000);	//segment size in bytes
 		PointShmemAllocator alloc_inst = segment->get_segment_manager();
-		Cell::alloc_inst = &alloc_inst;
+		Cell::alloc_inst = alloc_inst;
 		dem = segment->construct<Cell>("DEM")[cellsX * cellsY]();
 		pafScanline = (float*)segment->allocate(linearBytes);
 		linearHandle = segment->get_handle_from_address(pafScanline);
@@ -208,40 +209,28 @@ int main(int argc, char* argv[])
 	segment->deallocate((void*)pafScanline);
 	//Done reading DEM, now do calculations.
 
-	if(verbose) cout << "Calculating...\n";
-
-	/* This loop structure is here in case we find any sinkholes, in which case
-		we would have to redo all the calculations after adjusting the heights.
-	*/
-	bool sinkholes = false;
-	do
+	if(verbose) cout << "Calculating...\nFinding flow direction...\n";
+	//make flow direction grid
+	boost::thread_group flowDirCalc;
+	for(int thread=0; thread<(threads-1); thread++)
 	{
-		if(verbose) cout << "Finding flow direction...\n";
-		sinkholes = false;
-		//make flow direction grid
-		boost::thread_group flowDirCalc;
-		for(int thread=0; thread<(threads-1); thread++)
-		{
-			int firstRow = thread*rowsPerThread;
-			flowDirCalc.add_thread(new boost::thread(flowDirection, firstRow, firstRow+rowsPerThread));
-		}
-		flowDirCalc.add_thread(new boost::thread(flowDirection, (threads-1)*rowsPerThread, nYSize));
-		flowDirCalc.join_all();
-		
-		//make flow total grid, which will also reveal sinkholes.
-		if(verbose) cout << "Finding flow totals...\n";
-		boost::thread_group flowTotalCalc;
-		for(int thread=0; thread<(threads-1); thread++)
-		{
-			int firstRow = thread*rowsPerThread;
-			flowTotalCalc.add_thread(new boost::thread(flowTrace, firstRow, firstRow+rowsPerThread));
-		}
-		flowTotalCalc.add_thread(new boost::thread(flowTrace, (threads-1)*rowsPerThread, nYSize));
-		flowTotalCalc.join_all();
-		
-		
-	}while(sinkholes == true);
-	
+		int firstRow = thread*rowsPerThread;
+		flowDirCalc.add_thread(new boost::thread(flowDirection, firstRow, firstRow+rowsPerThread));
+	}
+	flowDirCalc.add_thread(new boost::thread(flowDirection, (threads-1)*rowsPerThread, nYSize));
+	flowDirCalc.join_all();
+
+	//make flow total grid
+	if(verbose) cout << "Finding flow totals...\n";
+	boost::thread_group flowTotalCalc;
+	for(int thread=0; thread<(threads-1); thread++)
+	{
+		int firstRow = thread*rowsPerThread;
+		flowTotalCalc.add_thread(new boost::thread(flowTrace, firstRow, firstRow+rowsPerThread));
+	}
+	flowTotalCalc.add_thread(new boost::thread(flowTrace, (threads-1)*rowsPerThread, nYSize));
+	flowTotalCalc.join_all();
+
 	if(verbose) cout << "Writing output...\n";
 	
 	//write output
@@ -491,8 +480,65 @@ void writeStdOut(Metadata iniData)
 
 void flowTrace(int firstRow, int end)
 {
+	Cell *dem=NULL;
+	ip::managed_shared_memory *segment=NULL;
+	const unsigned short max_att = 10;
+	unsigned short attempt = 0;
+	ip::interprocess_exception* e = NULL;
+	for(attempt = 0; attempt < max_att; attempt++)
+	{
+		try{
+			segment = new ip::managed_shared_memory(ip::open_only, "stream_finder_dem");
+			dem = segment->find<Cell>("DEM").first;
+			break;
+		}
+		catch(ip::interprocess_exception& ex){
+			cout << "Error accessing the shared memory objects in flowTrace for attempt "
+				<< attempt << ":\n" << ex.what() << "\n";
+			e = &ex;
+		}
+	}
+	if(attempt == max_att)
+	{
+		cout << "Can't get shared memory in flowTrace.\n";
+		throw *e;
+	}
+	
+	for(int row = firstRow;row < end; row++)
+	{
+		for(int column = 1; column < (nXSize-1); column++)
+		{
+			if(verbose) cout << '~';
+			follow(dem, row, column);
+		}
+	}
+	delete segment;
 }
 
-void follow(Cell* dem, int x, int y)
+void follow(Cell* dem, int row, int column)
 {
+	//If this cell was already part of another run's flow path,
+	//we have nothing to do.
+	if(linear(dem,row,column).flowTotal.size()) return;
+	
+	Point current(row, column);
+	Point last(current);
+	
+	for(flow(current, linear(dem, current).flowDir);
+		//make sure we are still inside the DEM
+		current.row>=0 && current.row<nYSize && current.column>=0 && current.column<nYSize;
+		//go to the next cell as per current flow direction
+		flow(current, linear(dem, current).flowDir) )
+	{
+		//if we flow into where we started we know the flow grid is corrupt
+		if(current.row == row && current.column == column)
+			throw oneBFG;
+		
+		//insert the last cell's flow records into this one
+		linear(dem, current).flowTotal.insert(
+			linear(dem, last).flowTotal.begin(),
+			linear(dem, last).flowTotal.end() );
+		
+		last = current;
+	}while(row>=0 && row<nYSize && column>=0 && column<nYSize);
 }

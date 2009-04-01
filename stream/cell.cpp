@@ -19,19 +19,14 @@
 
 #include "cell.h"
 
-PointShmemAllocator* Cell::alloc_inst=NULL;
-
-Cell::Cell(float elevation, int yIn, int xIn)
-	: height(elevation), flowDir(none), x(xIn), y(yIn), flowTotal(*alloc_inst)
-{}
-
 // TODO: use chained constructors when that functionality comes in C++09
-Cell::Cell(float elevation, int yIn, int xIn, direction dir)
-	: height(elevation), flowDir(dir), x(xIn), y(yIn), flowTotal(*alloc_inst)
-{}
+Cell::Cell(float elevation, int yIn, int xIn)
+	: height(elevation), flowDir(none), x(xIn), y(yIn), flowTotal(alloc_inst) {}
 
-Cell::Cell() : height(0), flowDir(none), x(-1), y(-1), flowTotal(*alloc_inst)
-{}
+Cell::Cell(float elevation, int yIn, int xIn, direction dir)
+	: height(elevation), flowDir(dir), x(xIn), y(yIn), flowTotal(alloc_inst) {}
+
+Cell::Cell() : height(-10000), flowDir(none), x(-1), y(-1), flowTotal(alloc_inst) {}
 
 Cell::~Cell()
 {}
@@ -68,5 +63,41 @@ direction intDirection(int dirIn)
 		case 6: return west;
 		case 7: return northwest;
 		case 8: return none;
+	}
+}
+
+void flow(Point& current, direction dir)
+{
+	switch(dir)
+	{
+		case north:
+		case northeast:
+		case northwest:
+		current.row--;
+		break;
+		
+		case southeast:
+		case south:
+		case southwest:
+		current.row++;
+		break;
+		
+		default: break;
+	}
+	switch(dir)
+	{
+		case northeast:
+		case east:
+		case southeast:
+		current.column++;
+		break;
+		
+		case southwest:
+		case west:
+		case northwest:
+		current.column--;
+		break;
+		
+		default: break;
 	}
 }

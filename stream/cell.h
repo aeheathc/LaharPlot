@@ -42,21 +42,26 @@ typedef ip::allocator<Point, ip::managed_shared_memory::segment_manager> PointSh
 enum direction{north, northeast, east, southeast, south, southwest, west, northwest, none};
 
 direction intDirection(int dirIn);
+void flow(Point& current, direction dir);
 
 class Point
 {
 	public:
-	int x,y;
-	Point(int xIn, int yIn): x(xIn),y(yIn) {}
-	Point(): x(-1),y(-1) {}
-	Point& operator=(const Point& src) {x = src.x; y = src.y; return *this;}
+	int row,column;
+	Point(int rIn, int cIn): row(rIn),column(cIn) {}
+	Point(): row(-30000),column(-30000) {}
+	Point(const Point& src): row(src.row),column(src.column) {}
+	Point& operator=(const Point& src)
+		{row = src.row; column = src.column; return *this;}
+	bool operator==(const Point& src) const
+		{return row==src.row && column==src.column;}
 };
 
 //	Cell represents one space on the DEM.
 class Cell
 {
 	public:
-	static PointShmemAllocator* alloc_inst;
+	static PointShmemAllocator alloc_inst;
 	
 	float height;		//Elevation in meters
 	int y,x;			//x,y location of this cell within the DEM
@@ -74,5 +79,12 @@ class Cell
 	
 	Cell& operator=(const Cell& src);	
 };
+
+//Use the values of a Point as a 2D index into a 1D array.
+template<typename T>
+T& linear(T *array, const Point& x, int width = -1)
+{
+	return linear(array, x.row, x.column, width);
+}
 
 #endif

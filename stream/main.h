@@ -23,6 +23,7 @@
 #include <cstdlib>
 
 #include <algorithm>
+#include <exception>
 #include <iomanip>
 #include <iostream>
 #include <sstream>
@@ -76,7 +77,13 @@ direction greatestSlope(Cell* dem, int x, int y);
 	parts of the DEM.
 */
 void flowTrace(int firstRow, int end);
-void follow(Cell* dem, int x, int y);
+void follow(Cell* dem, int row, int column);
+class BadFlowGrid : public exception
+{
+	public:
+	virtual const char *what() const throw()
+		{return "Flow direction grid provides impossible situation.";}
+} oneBFG;
 
 void writeFiles(Cell* dem, fs::ofstream& sdem, fs::ofstream& meta,
 				fs::ofstream& fdir, fs::ofstream& ftotal, Metadata& iniData);
