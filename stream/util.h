@@ -29,4 +29,11 @@ T& linear(T *array, int y, int x, int width = -1)
 	return array[y*cellsX+x];
 }
 
+//Trivial predicate that just uses the < operator of the subject
+struct Pred
+{
+	template<typename P>
+	bool operator()(const P& l, const P& r) const {return l<r;}
+};
+
 #endif

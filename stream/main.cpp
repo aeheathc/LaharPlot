@@ -537,7 +537,7 @@ void follow(Cell* dem, int row, int column)
 		//insert the last cell's flow records into this one
 		for(ip::set<Point, PointShmemAllocator>::iterator iter = linear(dem, last).flowTotal.begin(); iter != linear(dem, last).flowTotal.end(); iter++)
 		{
-			linear(dem, current).flowTotal.insert(*iter);
+			linear(dem, current).flowTotal.insert(last);
 		}
 		//linear(dem, current).flowTotal.insert(linear(dem, last).flowTotal.begin(),linear(dem, last).flowTotal.end());
 		

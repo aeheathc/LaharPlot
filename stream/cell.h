@@ -57,7 +57,7 @@ class Cell
 	direction flowDir;	//the direction in which THIS cell flows
 
 	//the list of cells that flow into this one.
-	ip::set<Point, PointShmemAllocator> flowTotal;
+	ip::set<Point, Pred, PointShmemAllocator> flowTotal;
 
 	void fill(float elevation, int y, int x, direction dir = none);	
 	
@@ -80,6 +80,8 @@ class Point
 		{row = src.row; column = src.column; return *this;}
 	bool operator==(const Point& src) const
 		{return row==src.row && column==src.column;}
+	bool operator<(const Point& src) const
+		{return (row+column)<(src.row+src.column);}
 };
 
 //Use the values of a Point as a 2D index into a 1D array.
