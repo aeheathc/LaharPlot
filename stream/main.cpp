@@ -135,7 +135,7 @@ int main(int argc, char* argv[])
 		size_t matrixBytes = sizeof(Cell) * cellsX * cellsY;
 		size_t linearBytes = sizeof(float) * cellsX * cellsY;
 		//size_t flowBytes = (sizeof(Point) * cellsX * cellsY * (cellsX * cellsY / 100 + 1)) - ( linearBytes<flowBytes?linearBytes:0);
-		size_t flowBytes = (sizeof(Point) * cellsX * cellsY * 10);
+		size_t flowBytes = (sizeof(Point) * cellsX * cellsY * 25);
 		segment = new ip::managed_shared_memory(ip::create_only,
 							"stream_finder_dem",		//segment name
 							matrixBytes+linearBytes+flowBytes+1000);	//segment size in bytes
@@ -294,14 +294,14 @@ direction greatestSlope(Cell* dem, int row, int column)
 {
 	vector<float> slopes(8,0);
 	//method 1 (rudiger)
-	slopes[north]		= linear(dem,row+1,column).height	- linear(dem,row-1,column).height;
+	/*slopes[north]		= linear(dem,row+1,column).height	- linear(dem,row-1,column).height;
 	slopes[northeast]	= linear(dem,row+1,column-1).height	- linear(dem,row-1,column+1).height;
 	slopes[east]		= linear(dem,row,column-1).height	- linear(dem,row,column+1).height;
 	slopes[southeast]	= linear(dem,row-1,column-1).height	- linear(dem,row+1,column+1).height;
 	slopes[south]		= -slopes[north];
 	slopes[southwest]	= -slopes[northeast];
 	slopes[west]		= -slopes[east];
-	slopes[northwest]	= -slopes[southeast];
+	slopes[northwest]	= -slopes[southeast];*/
 	
 	//method 2 (tony)
 	/*slopes[north]		= linear(dem,row,column).height	- linear(dem,row-1,column).height;
@@ -314,11 +314,11 @@ direction greatestSlope(Cell* dem, int row, int column)
 	slopes[northwest]	= linear(dem,row,column).height - linear(dem,row-1,column-1).height;*/
 	
 	//method 3 (null)
-	/*slopes[north]		= 1;
+	/*slopes[north]		= 0;
 	slopes[northeast]	= 0;
 	slopes[east]		= 0;
 	slopes[southeast]	= 0;
-	slopes[south]		= 0;
+	slopes[south]		= 1;
 	slopes[southwest]	= 0;
 	slopes[west]		= 0;
 	slopes[northwest]	= 0;*/
