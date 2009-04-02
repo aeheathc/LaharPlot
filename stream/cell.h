@@ -51,6 +51,7 @@ class Cell
 {
 	public:
 	static PointShmemAllocator* alloc_inst;
+	static Pred pred;
 	
 	float height;		//Elevation in meters
 	int y,x;			//x,y location of this cell within the DEM

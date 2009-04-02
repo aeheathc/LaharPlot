@@ -21,12 +21,12 @@
 
 // TODO: use chained constructors when that functionality comes in C++09
 Cell::Cell(float elevation, int yIn, int xIn)
-	: height(elevation), flowDir(none), x(xIn), y(yIn), flowTotal(*alloc_inst) {}
+	: height(elevation), flowDir(none), x(xIn), y(yIn), flowTotal(pred,*alloc_inst) {}
 
 Cell::Cell(float elevation, int yIn, int xIn, direction dir)
-	: height(elevation), flowDir(dir), x(xIn), y(yIn), flowTotal(*alloc_inst) {}
+	: height(elevation), flowDir(dir), x(xIn), y(yIn), flowTotal(pred,*alloc_inst) {}
 
-Cell::Cell() : height(-10000), flowDir(none), x(-1), y(-1), flowTotal(*alloc_inst) {}
+Cell::Cell() : height(-10000), flowDir(none), x(-1), y(-1), flowTotal(pred,*alloc_inst) {}
 
 Cell::~Cell()
 {}
@@ -49,6 +49,9 @@ Cell& Cell::operator=(const Cell& src)
 	copy( src.flowTotal.begin(), src.flowTotal.end(), flowTotal.begin() );
 	return *this;
 }
+
+PointShmemAllocator* Cell::alloc_inst;
+Pred Cell::pred;
 
 direction intDirection(int dirIn)
 {

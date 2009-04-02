@@ -134,7 +134,8 @@ int main(int argc, char* argv[])
 	try{
 		size_t matrixBytes = sizeof(Cell) * cellsX * cellsY;
 		size_t linearBytes = sizeof(float) * cellsX * cellsY;
-		size_t flowBytes = (sizeof(Point) * cellsX * cellsY * (cellsX * cellsY / 100 + 1)) - ( linearBytes<flowBytes?linearBytes:0);
+		//size_t flowBytes = (sizeof(Point) * cellsX * cellsY * (cellsX * cellsY / 100 + 1)) - ( linearBytes<flowBytes?linearBytes:0);
+		size_t flowBytes = (sizeof(Point) * cellsX * cellsY * 10);
 		segment = new ip::managed_shared_memory(ip::create_only,
 							"stream_finder_dem",		//segment name
 							matrixBytes+linearBytes+flowBytes+1000);	//segment size in bytes
@@ -208,7 +209,7 @@ int main(int argc, char* argv[])
 	segment->deallocate((void*)pafScanline);
 	//Done reading DEM, now do calculations.
 
-	if(verbose) cout << "Calculating...\nFinding flow direction...\n";
+	if(verbose) cout << "\nCalculating...\nFinding flow direction...\n";
 	//make flow direction grid
 	boost::thread_group flowDirCalc;
 	for(int thread=0; thread<(threads-1); thread++)
@@ -220,12 +221,13 @@ int main(int argc, char* argv[])
 	flowDirCalc.join_all();
 
 	//make flow total grid
-	if(verbose) cout << "Finding flow totals...\n";
+	if(verbose) cout << "\nFinding flow totals...\n";
 	boost::thread_group flowTotalCalc;
 	for(int thread=0; thread<(threads-1); thread++)
 	{
 		int firstRow = thread*rowsPerThread;
 		flowTotalCalc.add_thread(new boost::thread(flowTrace, firstRow, firstRow+rowsPerThread));
+		if(verbose) cout << "Assigned thread.\n";
 	}
 	flowTotalCalc.add_thread(new boost::thread(flowTrace, (threads-1)*rowsPerThread, nYSize));
 	flowTotalCalc.join_all();
@@ -291,6 +293,7 @@ void flowDirection(int row, int end)
 direction greatestSlope(Cell* dem, int row, int column)
 {
 	vector<float> slopes(8,0);
+	//method 1 (rudiger)
 	slopes[north]		= linear(dem,row+1,column).height	- linear(dem,row-1,column).height;
 	slopes[northeast]	= linear(dem,row+1,column-1).height	- linear(dem,row-1,column+1).height;
 	slopes[east]		= linear(dem,row,column-1).height	- linear(dem,row,column+1).height;
@@ -299,6 +302,27 @@ direction greatestSlope(Cell* dem, int row, int column)
 	slopes[southwest]	= -slopes[northeast];
 	slopes[west]		= -slopes[east];
 	slopes[northwest]	= -slopes[southeast];
+	
+	//method 2 (tony)
+	/*slopes[north]		= linear(dem,row,column).height	- linear(dem,row-1,column).height;
+	slopes[northeast]	= linear(dem,row,column).height	- linear(dem,row-1,column+1).height;
+	slopes[east]		= linear(dem,row,column).height	- linear(dem,row,column+1).height;
+	slopes[southeast]	= linear(dem,row,column).height	- linear(dem,row+1,column+1).height;
+	slopes[south]		= linear(dem,row,column).height - linear(dem,row+1,column).height;
+	slopes[southwest]	= linear(dem,row,column).height - linear(dem,row+1,column-1).height;
+	slopes[west]		= linear(dem,row,column).height - linear(dem,row,column-1).height;
+	slopes[northwest]	= linear(dem,row,column).height - linear(dem,row-1,column-1).height;*/
+	
+	//method 3 (null)
+	/*slopes[north]		= 1;
+	slopes[northeast]	= 0;
+	slopes[east]		= 0;
+	slopes[southeast]	= 0;
+	slopes[south]		= 0;
+	slopes[southwest]	= 0;
+	slopes[west]		= 0;
+	slopes[northwest]	= 0;*/
+	
 	int max=north;
 	for(int dir=northeast; dir < none; dir++)
 	{
@@ -503,13 +527,17 @@ void flowTrace(int firstRow, int end)
 		cout << "Can't get shared memory in flowTrace.\n";
 		throw *e;
 	}
-	
 	for(int row = firstRow;row < end; row++)
 	{
 		for(int column = 1; column < (nXSize-1); column++)
 		{
 			if(verbose) cout << '~';
-			follow(dem, row, column);
+			try{
+				follow(dem, row, column);
+			}catch(BadFlowGrid e){
+				cout << e.what() << '\n';
+				exit(2);
+			}
 		}
 	}
 	delete segment;
@@ -530,17 +558,26 @@ void follow(Cell* dem, int row, int column)
 		//go to the next cell as per current flow direction
 		flow(current, linear(dem, current).flowDir) )
 	{
-		//if we flow into where we started we know the flow grid is corrupt
-		if(current.row == row && current.column == column)
-			throw oneBFG;
-		
 		//insert the last cell's flow records into this one
-		for(ip::set<Point, PointShmemAllocator>::iterator iter = linear(dem, last).flowTotal.begin(); iter != linear(dem, last).flowTotal.end(); iter++)
+		/*for(ip::set<Point, Pred, PointShmemAllocator>::iterator iter = linear(dem, last).flowTotal.begin(); iter != linear(dem, last).flowTotal.end(); iter++)
 		{
-			linear(dem, current).flowTotal.insert(last);
-		}
-		//linear(dem, current).flowTotal.insert(linear(dem, last).flowTotal.begin(),linear(dem, last).flowTotal.end());
+			linear(dem, current).flowTotal.insert(*iter);
+		}*/
+		linear(dem, current).flowTotal.insert(last);
+		linear(dem, current).flowTotal.insert(linear(dem, last).flowTotal.begin(),linear(dem, last).flowTotal.end());
 		
+		//if we flow into the same cell again we know the flow grid is corrupt
+		if(linear(dem, current).flowTotal.find(Point(current.row, current.column)) != linear(dem, current).flowTotal.end())
+			throw oneBFG;
+			
+		if(verbose)
+		{
+			ostringstream oss;
+			oss << "row=" << current.row << ", col=" << current.column << ", setsize=" << linear(dem, current).flowTotal.size() << '\n';
+			cout << oss.str();
+		}
+
 		last = current;
-	}while(row>=0 && row<nYSize && column>=0 && column<nYSize);
+	}
 }
+
