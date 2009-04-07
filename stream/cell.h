@@ -54,7 +54,7 @@ class Cell
 	static Pred pred;
 	
 	float height;		//Elevation in meters
-	int y,x;			//x,y location of this cell within the DEM
+	int x,y;			//x,y location of this cell within the DEM
 	direction flowDir;	//the direction in which THIS cell flows
 
 	//the list of cells that flow into this one.

@@ -35,7 +35,6 @@
 #include <boost/interprocess/allocators/allocator.hpp>
 #include <boost/interprocess/containers/vector.hpp>
 #include <boost/interprocess/managed_shared_memory.hpp>
-#include <boost/multi_array.hpp>
 #include <boost/program_options.hpp> 
 #include <boost/thread.hpp>
 
@@ -82,7 +81,7 @@ class BadFlowGrid : public exception
 {
 	public:
 	virtual const char *what() const throw()
-		{return "Flow direction grid provides impossible situation.";}
+		{return "Flow direction grid provides impossible situation.\n";}
 } oneBFG;
 
 void writeFiles(Cell* dem, fs::ofstream& sdem, fs::ofstream& meta,

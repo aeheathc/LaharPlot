@@ -178,8 +178,8 @@ bool FillSinks::nextCell(int i)
 
 	if( R < 0 || C < 0 || R >= cellsY || C >= cellsX )
 	{
-		R	= R + fR[i];
-		C	= C + fC[i];
+		R = R + fR[i];
+		C = C + fC[i];
 		if( R < 0 || C < 0 || R >= cellsY || C >= cellsX )
 			return false;
 	}

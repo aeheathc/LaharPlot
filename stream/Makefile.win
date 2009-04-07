@@ -9,14 +9,17 @@ paths = -Ic:/lib/gdal/include -Ic:/lib/boost/boost_$(boostversion)_0 -Lc:/lib/gd
 warns = -Wall -Wcast-align -Wcast-qual -Wchar-subscripts -Winline \
 		-Wpointer-arith -Wwrite-strings -Wno-long-long
 
-all: main.cpp main.h cell.o fill.o util.h
-	g++ main.cpp cell.o fill.o -static $(warns) -o stream.exe $(paths) -lgdal $(boostlibs)
+all: main.cpp main.h cell.o fill.o util.o
+	g++ main.cpp cell.o fill.o util.o -static $(warns) -o stream.exe $(paths) -lgdal $(boostlibs)
 
 fill.o: fill.cpp fill.h util.h
-	g++ fill.cpp -c
+	g++ fill.cpp -c $(warns) $(paths)
 
 cell.o: cell.cpp cell.h util.h
-	g++ cell.cpp -c $(paths)
+	g++ cell.cpp -c $(warns) $(paths)
+
+util.o: util.h util.cpp
+	g++ util.cpp -c $(warns) $(paths)
 	
 clean:
 	rm *.o

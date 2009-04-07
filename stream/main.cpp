@@ -134,8 +134,8 @@ int main(int argc, char* argv[])
 	try{
 		size_t matrixBytes = sizeof(Cell) * cellsX * cellsY;
 		size_t linearBytes = sizeof(float) * cellsX * cellsY;
-		//size_t flowBytes = (sizeof(Point) * cellsX * cellsY * (cellsX * cellsY / 100 + 1)) - ( linearBytes<flowBytes?linearBytes:0);
-		size_t flowBytes = (sizeof(Point) * cellsX * cellsY * 25);
+		size_t flowBytes = (sizeof(Point) * cellsX * cellsY * (cellsX * cellsY / 10000000 + 1)) - linearBytes;
+		//size_t flowBytes = (sizeof(Point) * cellsX * cellsY * 25);
 		segment = new ip::managed_shared_memory(ip::create_only,
 							"stream_finder_dem",		//segment name
 							matrixBytes+linearBytes+flowBytes+1000);	//segment size in bytes
@@ -245,6 +245,7 @@ int main(int argc, char* argv[])
 	segment->destroy<Cell>("DEM");
 	delete segment;
 	ip::shared_memory_object::remove("stream_finder_dem");
+	cout << EOF;
 	return 0;
 }
 
@@ -266,6 +267,7 @@ void flowDirection(int row, int end)
 			cout << "Error accessing the shared memory objects in flowDirection for attempt "
 				<< attempt << ":\n" << ex.what() << "\n";
 			e = &ex;
+			sleep(2);
 		}
 	}
 	if(attempt == max_att)
@@ -304,14 +306,14 @@ direction greatestSlope(Cell* dem, int row, int column)
 	slopes[northwest]	= -slopes[southeast];*/
 	
 	//method 2 (tony)
-	/*slopes[north]		= linear(dem,row,column).height	- linear(dem,row-1,column).height;
+	slopes[north]		= linear(dem,row,column).height	- linear(dem,row-1,column).height;
 	slopes[northeast]	= linear(dem,row,column).height	- linear(dem,row-1,column+1).height;
 	slopes[east]		= linear(dem,row,column).height	- linear(dem,row,column+1).height;
 	slopes[southeast]	= linear(dem,row,column).height	- linear(dem,row+1,column+1).height;
 	slopes[south]		= linear(dem,row,column).height - linear(dem,row+1,column).height;
 	slopes[southwest]	= linear(dem,row,column).height - linear(dem,row+1,column-1).height;
 	slopes[west]		= linear(dem,row,column).height - linear(dem,row,column-1).height;
-	slopes[northwest]	= linear(dem,row,column).height - linear(dem,row-1,column-1).height;*/
+	slopes[northwest]	= linear(dem,row,column).height - linear(dem,row-1,column-1).height;
 	
 	//method 3 (null)
 	/*slopes[north]		= 0;
@@ -352,6 +354,7 @@ void linearTo2d(int firstRow, int end, ip::managed_shared_memory::handle_t linea
 			cout << "Error accessing the shared memory objects in linearTo2d for attempt "
 				<< attempt << ":\n" << ex.what() << "\n";
 			e = &ex;
+			sleep(2);
 		}
 	}
 	if(attempt == max_att)
@@ -520,6 +523,7 @@ void flowTrace(int firstRow, int end)
 			cout << "Error accessing the shared memory objects in flowTrace for attempt "
 				<< attempt << ":\n" << ex.what() << "\n";
 			e = &ex;
+			sleep(2);
 		}
 	}
 	if(attempt == max_att)
@@ -537,6 +541,9 @@ void flowTrace(int firstRow, int end)
 			}catch(BadFlowGrid e){
 				cout << e.what() << '\n';
 				exit(2);
+			}catch(...){
+				cout << "Could not follow.\n";
+				exit(1);
 			}
 		}
 	}
@@ -547,37 +554,37 @@ void follow(Cell* dem, int row, int column)
 {
 	//If this cell was already part of another run's flow path,
 	//we have nothing to do.
+	cout << "follow.1\n";
 	if(linear(dem,row,column).flowTotal.size()) return;
-	
+	cout << "follow.2\n";
 	Point current(row, column);
 	Point last(current);
-	
+	cout << "follow.3\n";
 	for(flow(current, linear(dem, current).flowDir);
 		//make sure we are still inside the DEM
 		current.row>=0 && current.row<nYSize && current.column>=0 && current.column<nYSize;
 		//go to the next cell as per current flow direction
 		flow(current, linear(dem, current).flowDir) )
 	{
+		cout << "follow.4\n";
 		//insert the last cell's flow records into this one
-		/*for(ip::set<Point, Pred, PointShmemAllocator>::iterator iter = linear(dem, last).flowTotal.begin(); iter != linear(dem, last).flowTotal.end(); iter++)
-		{
-			linear(dem, current).flowTotal.insert(*iter);
-		}*/
 		linear(dem, current).flowTotal.insert(last);
 		linear(dem, current).flowTotal.insert(linear(dem, last).flowTotal.begin(),linear(dem, last).flowTotal.end());
-		
+		cout << "follow.5\n";
 		//if we flow into the same cell again we know the flow grid is corrupt
 		if(linear(dem, current).flowTotal.find(Point(current.row, current.column)) != linear(dem, current).flowTotal.end())
 			throw oneBFG;
-			
+		cout << "follow.6\n";
 		if(verbose)
 		{
 			ostringstream oss;
 			oss << "row=" << current.row << ", col=" << current.column << ", setsize=" << linear(dem, current).flowTotal.size() << '\n';
 			cout << oss.str();
 		}
-
+		cout << "follow.7\n";
 		last = current;
+		cout << "follow.8\n";
 	}
+	cout << "follow.9\n";
 }
 

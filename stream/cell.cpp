@@ -21,12 +21,12 @@
 
 // TODO: use chained constructors when that functionality comes in C++09
 Cell::Cell(float elevation, int yIn, int xIn)
-	: height(elevation), flowDir(none), x(xIn), y(yIn), flowTotal(pred,*alloc_inst) {}
+	: height(elevation), x(xIn), y(yIn), flowDir(none), flowTotal(pred,*alloc_inst) {}
 
 Cell::Cell(float elevation, int yIn, int xIn, direction dir)
-	: height(elevation), flowDir(dir), x(xIn), y(yIn), flowTotal(pred,*alloc_inst) {}
+	: height(elevation), x(xIn), y(yIn), flowDir(dir), flowTotal(pred,*alloc_inst) {}
 
-Cell::Cell() : height(-10000), flowDir(none), x(-1), y(-1), flowTotal(pred,*alloc_inst) {}
+Cell::Cell() : height(-10000), x(-1), y(-1), flowDir(none), flowTotal(pred,*alloc_inst) {}
 
 Cell::~Cell()
 {}
@@ -67,6 +67,7 @@ direction intDirection(int dirIn)
 		case 7: return northwest;
 		case 8: return none;
 	}
+	return none;
 }
 
 void flow(Point& current, direction dir)

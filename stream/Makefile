@@ -17,16 +17,18 @@ warns = -Wall -ansi -Wcast-align -Wcast-qual -Wchar-subscripts -Winline \
 paths = -I/major/aeheathc/lib/gdal/include -L/major/aeheathc/lib/gdal/lib \
 		-I$(boostpath) -L$(boostpath)/lib
 
-all: main.cpp main.h cell.o fill.o util.h
-	g++ main.cpp cell.o fill.o $(warns) -o stream  $(paths) -lgdal $(boostlibs) $(linuxlibs)
+all: main.cpp main.h cell.o fill.o util.o
+	g++ main.cpp cell.o fill.o util.o $(warns) -o stream  $(paths) -lgdal $(boostlibs) $(linuxlibs)
 
 fill.o: fill.cpp fill.h util.h
-	g++ fill.cpp -c
+	g++ fill.cpp -c $(warns) $(paths)
 
 cell.o: cell.cpp cell.h util.h
-	g++ cell.cpp -c $(paths)
+	g++ cell.cpp -c $(warns) $(paths)
+
+util.o: util.h util.cpp
+	g++ util.cpp -c $(warns) $(paths)
 
 clean:
 	rm *.o
 	rm stream
-
