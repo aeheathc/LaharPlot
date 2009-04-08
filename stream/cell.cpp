@@ -21,12 +21,16 @@
 
 // TODO: use chained constructors when that functionality comes in C++09
 Cell::Cell(float elevation, int yIn, int xIn)
-	: height(elevation), x(xIn), y(yIn), flowDir(none), flowTotal(pred,*alloc_inst) {}
+	: height(elevation), y(yIn), x(xIn), flowDir(none), flowTotal(0), flowTotalReady(false)
+{}
 
 Cell::Cell(float elevation, int yIn, int xIn, direction dir)
-	: height(elevation), x(xIn), y(yIn), flowDir(dir), flowTotal(pred,*alloc_inst) {}
+	: height(elevation), y(yIn), x(xIn), flowDir(dir), flowTotal(0), flowTotalReady(false)
+{}
 
-Cell::Cell() : height(-10000), x(-1), y(-1), flowDir(none), flowTotal(pred,*alloc_inst) {}
+Cell::Cell()
+	: height(-10000), y(-1), x(-1), flowDir(none), flowTotal(0), flowTotalReady(false)
+{}
 
 Cell::~Cell()
 {}
@@ -45,13 +49,70 @@ Cell& Cell::operator=(const Cell& src)
 	x = src.x;
 	y = src.y;
 	flowDir = src.flowDir;
-	flowTotal.clear();
-	copy( src.flowTotal.begin(), src.flowTotal.end(), flowTotal.begin() );
+	flowTotal = src.flowTotal;
+	flowTotalReady = src.getFlowTotalReady();
 	return *this;
 }
 
-PointShmemAllocator* Cell::alloc_inst;
-Pred Cell::pred;
+bool Cell::getFlowTotalReady() const {return flowTotalReady;}
+
+unsigned long long Cell::getFlowTotal()
+{
+	if(!flowTotalReady)
+	{
+		accumulate();
+		flowTotalReady = true;
+	}
+	return flowTotal;
+}
+
+void Cell::accumulate()
+{
+	Cell *adj = NULL;							//an adjacent cell
+	if(y > 0)
+	{
+		adj = this - (sizeof(Cell) * cellsX);		//north
+		if(adj->flowDir == south)		flowTotal += adj->getFlowTotal();
+	}
+	if(y > 0 && x < (cellsX-1))
+	{
+		adj = this - (sizeof(Cell) * (cellsX-1));	//northeast
+		if(adj->flowDir == southwest)	flowTotal += adj->getFlowTotal();
+	}
+	if(x < (cellsX-1))
+	{
+		adj = this + sizeof(Cell);					//east
+		if(adj->flowDir == west)  		flowTotal += adj->getFlowTotal();
+	}
+	if(x < (cellsX-1) && y < (cellsY-1))
+	{
+		adj = this + (sizeof(Cell) * (cellsX+1));	//southeast
+		if(adj->flowDir == northwest)	flowTotal += adj->getFlowTotal();
+	}
+	if(y < (cellsY-1))
+	{
+		adj = this + (sizeof(Cell) * cellsX);		//south
+		if(adj->flowDir == north)		flowTotal += adj->getFlowTotal();
+	}
+	if(x>0 && y < (cellsY-1))
+	{
+		adj = this + (sizeof(Cell) * (cellsX-1));	//southwest
+		if(adj->flowDir == northeast)	flowTotal += adj->getFlowTotal();
+	}
+	if(x>0)
+	{
+		adj = this - sizeof(Cell);					//west
+		if(adj->flowDir == east)		flowTotal += adj->getFlowTotal();
+	}
+	if(y>0 && x>0)
+	{
+		adj = this - (sizeof(Cell) * (cellsX+1));	//northwest
+		if(adj->flowDir == southeast)	flowTotal += adj->getFlowTotal();
+	}
+}
+
+int Cell::cellsY;
+int Cell::cellsX;
 
 direction intDirection(int dirIn)
 {

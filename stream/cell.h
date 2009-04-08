@@ -50,24 +50,27 @@ void flow(Point& current, direction dir);
 class Cell
 {
 	public:
-	static PointShmemAllocator* alloc_inst;
-	static Pred pred;
-	
+	static int cellsY, cellsX;
+		
 	float height;		//Elevation in meters
-	int x,y;			//x,y location of this cell within the DEM
+	int y,x;			//location of this cell within the DEM
 	direction flowDir;	//the direction in which THIS cell flows
+	unsigned long long flowTotal;
 
-	//the list of cells that flow into this one.
-	ip::set<Point, Pred, PointShmemAllocator> flowTotal;
-
-	void fill(float elevation, int y, int x, direction dir = none);	
-	
 	Cell(float elevation, int y, int x);
 	Cell(float elevation, int y, int x, direction dir);
 	Cell();
 	~Cell();
 	
-	Cell& operator=(const Cell& src);	
+	bool getFlowTotalReady() const;
+	unsigned long long getFlowTotal();
+
+	Cell& operator=(const Cell& src);
+	void fill(float elevation, int y, int x, direction dir = none);
+	void accumulate();
+	
+	private:
+	bool flowTotalReady;
 };
 
 class Point

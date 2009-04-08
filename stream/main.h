@@ -56,7 +56,6 @@ struct Metadata
 	string projection;	
 };
 
-int nXSize, nYSize;
 bool cmdIn = false, fileOut = false, cmdOut = false, verbose = false;
 
 int main(int argc, char* argv[]);

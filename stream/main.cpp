@@ -109,9 +109,9 @@ int main(int argc, char* argv[])
 
 	Metadata iniData;
 	double	adfGeoTransform[6];
-	int	cellsX = poDataset->GetRasterXSize(),
-		cellsY = poDataset->GetRasterYSize();
-		//layers = poDataset->GetRasterCount();
+	Cell::cellsX = poDataset->GetRasterXSize(),
+	Cell::cellsY = poDataset->GetRasterYSize();
+	//int layers = poDataset->GetRasterCount();
 			
     if(poDataset->GetProjectionRef() != NULL)
 	{
@@ -132,15 +132,13 @@ int main(int argc, char* argv[])
 	ip::managed_shared_memory *segment=NULL;
 	ip::managed_shared_memory::handle_t linearHandle;
 	try{
-		size_t matrixBytes = sizeof(Cell) * cellsX * cellsY;
-		size_t linearBytes = sizeof(float) * cellsX * cellsY;
-		size_t flowBytes = (sizeof(Point) * cellsX * cellsY * (cellsX * cellsY / 10000000 + 1)) - linearBytes;
-		//size_t flowBytes = (sizeof(Point) * cellsX * cellsY * 25);
+		size_t matrixBytes = sizeof(Cell) * Cell::cellsX * Cell::cellsY;
+		size_t linearBytes = sizeof(float) * Cell::cellsX * Cell::cellsY;
 		segment = new ip::managed_shared_memory(ip::create_only,
 							"stream_finder_dem",		//segment name
-							matrixBytes+linearBytes+flowBytes+1000);	//segment size in bytes
+							matrixBytes+linearBytes+1000);	//segment size in bytes
 		Cell::alloc_inst = new PointShmemAllocator(segment->get_segment_manager());
-		dem = segment->construct<Cell>("DEM")[cellsX * cellsY]();
+		dem = segment->construct<Cell>("DEM")[Cell::cellsX * Cell::cellsY]();
 		pafScanline = (float*)segment->allocate(linearBytes);
 		linearHandle = segment->get_handle_from_address(pafScanline);
 	}
@@ -153,6 +151,7 @@ int main(int argc, char* argv[])
 	GDALRasterBand  *poBand;
 	int             nBlockXSize, nBlockYSize;
 	int             bGotMin, bGotMax;
+	int				inXSize, inYSize;
 	double          adfMinMax[2];
 	string			demDT;
 	poBand = poDataset->GetRasterBand(1);
@@ -162,12 +161,12 @@ int main(int argc, char* argv[])
 	adfMinMax[1] = poBand->GetMaximum( &bGotMax );
 	if(!(bGotMin && bGotMax))
 		GDALComputeRasterMinMax((GDALRasterBandH)poBand, TRUE, adfMinMax);
-	nXSize = abs(poBand->GetXSize());
-	nYSize = abs(poBand->GetYSize());
-	poBand->RasterIO( GF_Read, 0, 0, nXSize, nYSize, pafScanline, nXSize, nYSize, GDT_Float32, 0, 0 );
+	inXSize = abs(poBand->GetXSize());
+	inYSize = abs(poBand->GetYSize());
+	poBand->RasterIO( GF_Read, 0, 0, inXSize, inYSize, pafScanline, inXSize, inYSize, GDT_Float32, 0, 0 );
 	GDALClose((GDALDatasetH*)poDataset);
 	
-	if(nXSize < 2 || nYSize < 2)
+	if(Cell::cellsX < 2 || Cell::cellsY < 2 || inXSize != Cell::cellsX || inYSize != Cell::cellsY)
 	{
 		cout << "Something is wrong with the input DEM. Aborting.\n";
 		segment->destroy<Cell>("DEM");
@@ -177,22 +176,22 @@ int main(int argc, char* argv[])
 		return 1;
 	}
 	
-	linear(pafScanline,0,0,nXSize);	//initialize static variable inside linear()
-	linear(dem,0,0,nXSize);
+	linear(pafScanline,0,0,Cell::cellsX);	//initialize static variable inside linear()
+	linear(dem,0,0,Cell::cellsX);
 		
 	//Fill in the sinkholes!
 	if(verbose) cout << "Filling sinkholes...\n";
-	FillSinks filler(pafScanline, nYSize, nXSize, 1);
+	FillSinks filler(pafScanline, Cell::cellsY, Cell::cellsX, 1);
 	filler.fill();
 	
 	//We have the data from the file, now we make the data 2-dimensional for easier reading.
 	//The cells on the outside are made with default outward flow directions.
-	if(threads > nYSize) threads = nYSize;
-	int rowsPerThread = nYSize / threads;
+	if(threads > Cell::cellsY) threads = Cell::cellsY;
+	int rowsPerThread = Cell::cellsY / threads;
 	if(verbose)
 	{
-		cout << "XSize=" << nXSize << ",YSize=" << nYSize << ",Cells="
-			<< (nXSize*nYSize) << "\nBuilding DEM...\n";
+		cout << "XSize=" << Cell::cellsX << ",YSize=" << Cell::cellsY << ",Cells="
+			<< (Cell::cellsX*Cell::cellsY) << "\nBuilding DEM...\n";
 	}
 	boost::thread_group demFiller;
 	
@@ -203,7 +202,7 @@ int main(int argc, char* argv[])
 												firstRow+rowsPerThread, linearHandle));
 	}
 	demFiller.add_thread(new boost::thread(linearTo2d, (threads-1)*rowsPerThread,
-											nYSize, linearHandle));
+											Cell::cellsY, linearHandle));
 	
 	demFiller.join_all();	//wait until all the data is in place before doing calcs on it
 	segment->deallocate((void*)pafScanline);
@@ -217,7 +216,7 @@ int main(int argc, char* argv[])
 		int firstRow = thread*rowsPerThread;
 		flowDirCalc.add_thread(new boost::thread(flowDirection, firstRow, firstRow+rowsPerThread));
 	}
-	flowDirCalc.add_thread(new boost::thread(flowDirection, (threads-1)*rowsPerThread, nYSize));
+	flowDirCalc.add_thread(new boost::thread(flowDirection, (threads-1)*rowsPerThread, Cell::cellsY));
 	flowDirCalc.join_all();
 
 	//make flow total grid
@@ -229,7 +228,7 @@ int main(int argc, char* argv[])
 		flowTotalCalc.add_thread(new boost::thread(flowTrace, firstRow, firstRow+rowsPerThread));
 		if(verbose) cout << "Assigned thread.\n";
 	}
-	flowTotalCalc.add_thread(new boost::thread(flowTrace, (threads-1)*rowsPerThread, nYSize));
+	flowTotalCalc.add_thread(new boost::thread(flowTrace, (threads-1)*rowsPerThread, Cell::cellsY));
 	flowTotalCalc.join_all();
 
 	if(verbose) cout << "Writing output...\n";
@@ -279,11 +278,11 @@ void flowDirection(int row, int end)
 	//We don't deal with cells on the outer boundary because their default
 	//flow direction is outward and that is what we want.
 	if(!row) row++;
-	if(end == nYSize) end--;
+	if(end == Cell::cellsY) end--;
 	
 	for(;row < end; row++)
 	{
-		for(int column = 1; column < (nXSize-1); column++)
+		for(int column = 1; column < (Cell::cellsX-1); column++)
 		{
 			if(verbose) cout << '.';
 			linear(dem,row,column).flowDir = greatestSlope(dem, row, column);
@@ -295,7 +294,7 @@ void flowDirection(int row, int end)
 direction greatestSlope(Cell* dem, int row, int column)
 {
 	vector<float> slopes(8,0);
-	//method 1 (rudiger)
+	//method 1 (rudiger: compare cross slopes)
 	/*slopes[north]		= linear(dem,row+1,column).height	- linear(dem,row-1,column).height;
 	slopes[northeast]	= linear(dem,row+1,column-1).height	- linear(dem,row-1,column+1).height;
 	slopes[east]		= linear(dem,row,column-1).height	- linear(dem,row,column+1).height;
@@ -305,15 +304,15 @@ direction greatestSlope(Cell* dem, int row, int column)
 	slopes[west]		= -slopes[east];
 	slopes[northwest]	= -slopes[southeast];*/
 	
-	//method 2 (tony)
-	slopes[north]		= linear(dem,row,column).height	- linear(dem,row-1,column).height;
+	//method 2 (compare radial slopes)
+	/*slopes[north]		= linear(dem,row,column).height	- linear(dem,row-1,column).height;
 	slopes[northeast]	= linear(dem,row,column).height	- linear(dem,row-1,column+1).height;
 	slopes[east]		= linear(dem,row,column).height	- linear(dem,row,column+1).height;
 	slopes[southeast]	= linear(dem,row,column).height	- linear(dem,row+1,column+1).height;
 	slopes[south]		= linear(dem,row,column).height - linear(dem,row+1,column).height;
 	slopes[southwest]	= linear(dem,row,column).height - linear(dem,row+1,column-1).height;
 	slopes[west]		= linear(dem,row,column).height - linear(dem,row,column-1).height;
-	slopes[northwest]	= linear(dem,row,column).height - linear(dem,row-1,column-1).height;
+	slopes[northwest]	= linear(dem,row,column).height - linear(dem,row-1,column-1).height;*/
 	
 	//method 3 (null)
 	/*slopes[north]		= 0;
@@ -324,6 +323,16 @@ direction greatestSlope(Cell* dem, int row, int column)
 	slopes[southwest]	= 0;
 	slopes[west]		= 0;
 	slopes[northwest]	= 0;*/
+		
+	//method 4 (use lowest elevation)
+	slopes[north]		= -linear(dem,row-1,column	).height;
+	slopes[northeast]	= -linear(dem,row-1,column+1).height;
+	slopes[east]		= -linear(dem,row,	column+1).height;
+	slopes[southeast]	= -linear(dem,row+1,column+1).height;
+	slopes[south]		= -linear(dem,row+1,column	).height;
+	slopes[southwest]	= -linear(dem,row+1,column-1).height;
+	slopes[west]		= -linear(dem,row,	column-1).height;
+	slopes[northwest]	= -linear(dem,row-1,column-1).height;	
 	
 	int max=north;
 	for(int dir=northeast; dir < none; dir++)
@@ -367,32 +376,32 @@ void linearTo2d(int firstRow, int end, ip::managed_shared_memory::handle_t linea
 	if(firstRow == 0)
 	{
 		linear(dem,yp,0).fill(linear(linearData, yp, 0), yp, 0, northwest);
-		for(int xp = 1; xp<(nXSize-1); xp++)
+		for(int xp = 1; xp<(Cell::cellsX-1); xp++)
 		{
 			linear(dem,yp,xp).fill(linear(linearData, yp, xp), yp, xp, north);
 		}
-		linear(dem,yp,nXSize-1).fill(linear(linearData, yp, nXSize-1), yp, nXSize-1, northeast);
+		linear(dem,yp,Cell::cellsX-1).fill(linear(linearData, yp, Cell::cellsX-1), yp, Cell::cellsX-1, northeast);
 		yp++;
 	}
-	int lastNormRow = (end==nYSize) ? end-1 : end;
+	int lastNormRow = (end==Cell::cellsY) ? end-1 : end;
 	for(; yp<lastNormRow; yp++)
 	{
 		linear(dem,yp,0).fill(linear(linearData, yp, 0), yp, 0, west);
-		for(int xp = 1; xp<(nXSize-1); xp++)
+		for(int xp = 1; xp<(Cell::cellsX-1); xp++)
 		{
 			if(verbose) cout << '-';
 			linear(dem,yp,xp).fill(linear(linearData, yp, xp), yp, xp);
 		}
-		linear(dem,yp,nXSize-1).fill(linear(linearData, yp, nXSize-1), yp, nXSize-1, east);
+		linear(dem,yp,Cell::cellsX-1).fill(linear(linearData, yp, Cell::cellsX-1), yp, Cell::cellsX-1, east);
 	}
 	if(lastNormRow != end)
 	{
 		linear(dem,yp,0).fill(linear(linearData, yp, 0), yp, 0, southwest);
-		for(int xp = 1; xp<(nXSize-1); xp++)
+		for(int xp = 1; xp<(Cell::cellsX-1); xp++)
 		{
 			linear(dem,yp,xp).fill(linear(linearData, yp, xp), yp, xp, south);
 		}
-		linear(dem,yp,nXSize-1).fill(linear(linearData, yp, nXSize-1), yp, nXSize-1, southeast);
+		linear(dem,yp,Cell::cellsX-1).fill(linear(linearData, yp, Cell::cellsX-1), yp, Cell::cellsX-1, southeast);
 	}
 	delete segment;
 }
@@ -400,45 +409,45 @@ void linearTo2d(int firstRow, int end, ip::managed_shared_memory::handle_t linea
 void writeFiles(Cell* dem, fs::ofstream& sdem, fs::ofstream& meta, fs::ofstream& fdir, fs::ofstream& ftotal, Metadata& iniData)
 {
 	//write Simplified DEM
-	for(int row=0; row<nYSize; row++)
+	for(int row=0; row<Cell::cellsY; row++)
 	{
-		for(int column=0; column<(nXSize-1); column++)
+		for(int column=0; column<(Cell::cellsX-1); column++)
 		{
 			sdem << linear(dem,row,column).height << '\t';
 		}
-		sdem << linear(dem,row,nXSize-1).height << '\n';
+		sdem << linear(dem,row,Cell::cellsX-1).height << '\n';
 	}
 	sdem.close();
 
 	//write Metadata INI
 	meta << fixed << setprecision(0) << "[Core]\npixel_size=" << iniData.physicalSize
-			<< "\nx_pixels=" << nXSize << "\ny_pixels=" << nYSize
+			<< "\nx_pixels=" << Cell::cellsX << "\ny_pixels=" << Cell::cellsY
 			<< "\n[Display]\norigin_x=" << iniData.originX << "\norigin_y="
 			<< iniData.originY << "\nprojection=" << iniData.projection << "\n";
 	meta.close();
 
 	//Write Flow Direction Grid
-	for(int row=0; row<nYSize; row++)
+	for(int row=0; row<Cell::cellsY; row++)
 	{
-		for(int column=0; column<(nXSize-1); column++)
+		for(int column=0; column<(Cell::cellsX-1); column++)
 		{
 			fdir << (int)(linear(dem,row,column).flowDir) << '\t';
 		}
-		fdir << (int)(linear(dem,row,nXSize-1).flowDir) << '\n';
+		fdir << (int)(linear(dem,row,Cell::cellsX-1).flowDir) << '\n';
 	}
 	fdir.close();
 
 	//write Flow Total Grid
 	ftotal << fixed << setprecision(0);
-	for(int row=0; row<nYSize; row++)
+	for(int row=0; row<Cell::cellsY; row++)
 	{
 		int numOut = 0;
-		for(int column=0; column<(nXSize-1); column++)
+		for(int column=0; column<(Cell::cellsX-1); column++)
 		{
 			numOut = linear(dem,row,column).flowTotal.size();
 			ftotal << numOut << '\t';
 		}
-		numOut = linear(dem,row,nXSize-1).flowTotal.size();
+		numOut = linear(dem,row,Cell::cellsX-1).flowTotal.size();
 		ftotal << numOut << '\n';
 	}
 	ftotal.close();
@@ -463,43 +472,43 @@ void writeStdOut(Metadata iniData)
 
 	cout << fixed;
 	//write Simplified DEM
-	for(int row=0; row<nYSize; row++)
+	for(int row=0; row<Cell::cellsY; row++)
 	{
-		for(int column=0; column<(nXSize-1); column++)
+		for(int column=0; column<(Cell::cellsX-1); column++)
 		{
 			cout << linear(dem,row,column).height << '\t';
 		}
-		cout << linear(dem,row,nXSize-1).height << '\n';
+		cout << linear(dem,row,Cell::cellsX-1).height << '\n';
 	}
 	cout << '\n';
 
 	//write Metadata INI
 	cout << "[Core]\npixel_size=" << iniData.physicalSize << "\nx_pixels="
-			<< nXSize << "\ny_pixels=" << nYSize << "\n[Display]\norigin_x="
+			<< Cell::cellsX << "\ny_pixels=" << Cell::cellsY << "\n[Display]\norigin_x="
 			<< iniData.originX << "\norigin_y=" << iniData.originY
 			<< "\nprojection=" << iniData.projection << "\n";
 	cout << '\n';
 	
 	//Write Flow Direction Grid
-	for(int row=0; row<nYSize; row++)
+	for(int row=0; row<Cell::cellsY; row++)
 	{
-		for(int column=0; column<(nXSize-1); column++)
+		for(int column=0; column<(Cell::cellsX-1); column++)
 		{
 			cout << (int)(linear(dem,row,column).flowDir) << '\t';
 		}
-		cout << (int)(linear(dem,row,nXSize-1).flowDir) << '\n';
+		cout << (int)(linear(dem,row,Cell::cellsX-1).flowDir) << '\n';
 	}
 	cout << '\n';
 	//write Flow Total Grid
-	for(int row=0; row<nYSize; row++)
+	for(int row=0; row<Cell::cellsY; row++)
 	{
 		int numOut = 0;
-		for(int column=0; column<(nXSize-1); column++)
+		for(int column=0; column<(Cell::cellsX-1); column++)
 		{
 			numOut = linear(dem,row,column).flowTotal.size();
 			cout << numOut << '\t';
 		}
-		numOut = linear(dem,row,nXSize-1).flowTotal.size();
+		numOut = linear(dem,row,Cell::cellsX-1).flowTotal.size();
 		cout << numOut << '\n';
 	}
 	delete segment;
@@ -533,7 +542,7 @@ void flowTrace(int firstRow, int end)
 	}
 	for(int row = firstRow;row < end; row++)
 	{
-		for(int column = 1; column < (nXSize-1); column++)
+		for(int column = 1; column < (Cell::cellsX-1); column++)
 		{
 			if(verbose) cout << '~';
 			try{
@@ -562,7 +571,7 @@ void follow(Cell* dem, int row, int column)
 	cout << "follow.3\n";
 	for(flow(current, linear(dem, current).flowDir);
 		//make sure we are still inside the DEM
-		current.row>=0 && current.row<nYSize && current.column>=0 && current.column<nYSize;
+		current.row>=0 && current.row<Cell::cellsY && current.column>=0 && current.column<Cell::cellsY;
 		//go to the next cell as per current flow direction
 		flow(current, linear(dem, current).flowDir) )
 	{
