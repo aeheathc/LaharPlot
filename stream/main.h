@@ -70,12 +70,11 @@ void linearTo2d(int firstRow, int end, ip::managed_shared_memory::handle_t linea
 void flowDirection(int firstRow, int end);
 direction greatestSlope(Cell* dem, int x, int y);
 
-/*	Creates flow records for the Flow Total Grid, with starting cells in rows
-	firstRow to (end-1). Usually called multiple times in parallel, on different
+/*	Creates flow records for the Flow Total Grid in a certain part of the DEM.
+	Usually called multiple times in parallel, on different
 	parts of the DEM.
 */
-void flowTrace(int firstRow, int end);
-void follow(Cell* dem, int row, int column);
+void flowTrace(int start, int end);
 class BadFlowGrid : public exception
 {
 	public:

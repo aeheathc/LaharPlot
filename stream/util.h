@@ -30,6 +30,17 @@ T& linear(T *array, int y, int x, int width = -1)
 	if(width != -1) cellsX = width;
 	return array[y*cellsX+x];
 }
+
+//Index into a linear collection of elements on the OUTER EDGE of a matrix
+//stored in a 1D array
+template<typename T>
+T& edge(T *array, int x, int width = -1)
+{
+	static int cellsX = -1;
+	if(width != -1) cellsX = width;
+	if(
+	return array[y*cellsX+x];
+}
 //Trivial predicate that just uses the < operator of the subject
 struct Pred
 {
