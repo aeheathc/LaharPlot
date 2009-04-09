@@ -68,6 +68,10 @@ unsigned long long Cell::getFlowTotal()
 
 void Cell::accumulate()
 {
+	ostringstream oss;
+	oss << "Calling accumulate on " << y << ',' << x << '\n';  //debug
+	//cout << oss.str();
+	
 	Cell *adj = NULL;							//an adjacent cell
 	if(y > 0)
 	{
@@ -131,38 +135,3 @@ direction intDirection(int dirIn)
 	return none;
 }
 
-void flow(Point& current, direction dir)
-{
-	switch(dir)
-	{
-		case north:
-		case northeast:
-		case northwest:
-		current.row--;
-		break;
-		
-		case southeast:
-		case south:
-		case southwest:
-		current.row++;
-		break;
-		
-		default: break;
-	}
-	switch(dir)
-	{
-		case northeast:
-		case east:
-		case southeast:
-		current.column++;
-		break;
-		
-		case southwest:
-		case west:
-		case northwest:
-		current.column--;
-		break;
-		
-		default: break;
-	}
-}

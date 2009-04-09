@@ -27,24 +27,15 @@
 #include <sstream>
 #include <string>
 
-#include <boost/interprocess/allocators/allocator.hpp>
-#include <boost/interprocess/containers/set.hpp>
-#include <boost/interprocess/managed_shared_memory.hpp>
-
 #include "util.h"
 
 using namespace std;
-namespace ip = boost::interprocess;
 
 class Cell;
-class Point;
-
-typedef ip::allocator<Point, ip::managed_shared_memory::segment_manager> PointShmemAllocator;
 
 enum direction{north, northeast, east, southeast, south, southwest, west, northwest, none};
 
 direction intDirection(int dirIn);
-void flow(Point& current, direction dir);
 
 //	Cell represents one space on the DEM.
 class Cell
@@ -72,27 +63,5 @@ class Cell
 	private:
 	bool flowTotalReady;
 };
-
-class Point
-{
-	public:
-	int row,column;
-	Point(int rIn, int cIn): row(rIn),column(cIn) {}
-	Point(): row(-30000),column(-30000) {}
-	Point(const Point& src): row(src.row),column(src.column) {}
-	Point& operator=(const Point& src)
-		{row = src.row; column = src.column; return *this;}
-	bool operator==(const Point& src) const
-		{return row==src.row && column==src.column;}
-	bool operator<(const Point& src) const
-		{return (row+column)<(src.row+src.column);}
-};
-
-//Use the values of a Point as a 2D index into a 1D array.
-template<typename T>
-T& linear(T *array, const Point& x, int width = -1)
-{
-	return linear(array, x.row, x.column, width);
-}
 
 #endif

@@ -51,7 +51,10 @@ int main(int argc, char* argv[])
 	cmdOut = vm.count("std-out");
 	verbose = vm.count("verbose");
 	int threads = vm.count("threads") ? abs(vm["threads"].as<int>()) : 4;
-	fs::ofstream sDem, meta, flowDir, flowTotal;
+	sDem = new fs::ofstream;
+	meta = new fs::ofstream;
+	flowDir = new fs::ofstream;
+	flowTotal = new fs::ofstream;
 	
 	if(vm.count("input-file"))
 	{
@@ -77,11 +80,11 @@ int main(int argc, char* argv[])
 		{
 			optError = "invalid filename\n";
 		}else{
-			sDem.open(outfile+"-sdem.tsv");
-			meta.open(outfile+".ini");
-			flowDir.open(outfile+"-fdir.tsv");
-			flowTotal.open(outfile+"-ftotal.tsv");
-			if(!(sDem && meta && flowDir && flowTotal))
+			sDem->open(outfile+"-sdem.tsv");
+			meta->open(outfile+".ini");
+			flowDir->open(outfile+"-fdir.tsv");
+			flowTotal->open(outfile+"-ftotal.tsv");
+			if(!(*sDem && *meta && *flowDir && *flowTotal))
 				optError = string("couldn't open output files\n(Is the filename valid?)")
 							+"\n(Is there a permissions issue?)\n";
 		}
@@ -125,28 +128,14 @@ int main(int argc, char* argv[])
 		iniData.physicalSize = adfGeoTransform[1];
 		//above size is X-size. Y-size is in adfGeoTransform[5]
 	}
-	//set up shared memory
-	Cell *dem = NULL;
-	float *pafScanline = NULL;
-	ip::shared_memory_object::remove("stream_finder_dem");
-	ip::managed_shared_memory *segment=NULL;
-	ip::managed_shared_memory::handle_t linearHandle;
-	try{
-		size_t matrixBytes = sizeof(Cell) * Cell::cellsX * Cell::cellsY;
-		size_t linearBytes = sizeof(float) * Cell::cellsX * Cell::cellsY;
-		segment = new ip::managed_shared_memory(ip::create_only,
-							"stream_finder_dem",		//segment name
-							matrixBytes+linearBytes+1000);	//segment size in bytes
-		dem = segment->construct<Cell>("DEM")[Cell::cellsX * Cell::cellsY]();
-		pafScanline = (float*)segment->allocate(linearBytes);
-		linearHandle = segment->get_handle_from_address(pafScanline);
-	}
-	catch(ip::interprocess_exception& e)
-	{
-		ip::shared_memory_object::remove("stream_finder_dem");
-		cout << "Error creating/allocating main shared memory: " << e.what() << "\n";
-		throw;
-	}
+
+	boost::thread_group writeout;	
+	if(fileOut)	writeout.add_thread(new boost::thread(writeMeta, iniData));
+	
+	//set up globals for interthread data sharing
+	dem = new Cell[Cell::cellsX * Cell::cellsY];
+	pafScanline = new float[Cell::cellsX * Cell::cellsY];
+
 	GDALRasterBand  *poBand;
 	int             nBlockXSize, nBlockYSize;
 	int             bGotMin, bGotMax;
@@ -168,10 +157,8 @@ int main(int argc, char* argv[])
 	if(Cell::cellsX < 2 || Cell::cellsY < 2 || inXSize != Cell::cellsX || inYSize != Cell::cellsY)
 	{
 		cout << "Something is wrong with the input DEM. Aborting.\n";
-		segment->destroy<Cell>("DEM");
-		segment->deallocate((void*)pafScanline);
-		delete segment;
-		ip::shared_memory_object::remove("stream_finder_dem");
+		delete[] dem;
+		delete[] pafScanline;
 		return 1;
 	}
 	
@@ -198,15 +185,18 @@ int main(int argc, char* argv[])
 	{
 		int firstRow = thread*rowsPerThread;
 		demFiller.add_thread(new boost::thread(linearTo2d, firstRow,
-												firstRow+rowsPerThread, linearHandle));
+												firstRow+rowsPerThread));
 	}
 	demFiller.add_thread(new boost::thread(linearTo2d, (threads-1)*rowsPerThread,
-											Cell::cellsY, linearHandle));
+											Cell::cellsY));
 	
 	demFiller.join_all();	//wait until all the data is in place before doing calcs on it
-	segment->deallocate((void*)pafScanline);
-	//Done reading DEM, now do calculations.
-
+	delete[] pafScanline;
+	//Done reading DEM...
+	
+	if(fileOut)	writeout.add_thread(new boost::thread(writeSdem));
+	
+	//Now do calculations.
 	if(verbose) cout << "\nCalculating...\nFinding flow direction...\n";
 	//make flow direction grid
 	boost::thread_group flowDirCalc;
@@ -217,6 +207,7 @@ int main(int argc, char* argv[])
 	}
 	flowDirCalc.add_thread(new boost::thread(flowDirection, (threads-1)*rowsPerThread, Cell::cellsY));
 	flowDirCalc.join_all();
+	if(fileOut)	writeout.add_thread(new boost::thread(writeFlowDir));
 
 	//make flow total grid
 	if(verbose) cout << "\nFinding flow totals...\n";
@@ -236,46 +227,24 @@ int main(int argc, char* argv[])
 	if(verbose) cout << "Writing output...\n";
 	
 	//write output
-	boost::thread_group writeout;
-	if(fileOut)	writeFiles(dem, sDem, meta, flowDir, flowTotal, iniData);
+	if(fileOut)	writeout.add_thread(new boost::thread(writeFlowTotal));
 	if(cmdOut)	writeout.add_thread(new boost::thread(writeStdOut, iniData));
 	writeout.join_all();
 	
-	//Free shared memory
-	segment->destroy<Cell>("DEM");
-	delete segment;
-	ip::shared_memory_object::remove("stream_finder_dem");
+	//Free heap memory
+	delete sDem;
+	delete meta;
+	delete flowDir;
+	delete flowTotal;
+	delete[] dem;
+	
+	//tell any stdout-captors that we are done
 	cout << EOF;
 	return 0;
 }
 
 void flowDirection(int row, int end)
 {
-	Cell *dem=NULL;
-	ip::managed_shared_memory *segment=NULL;
-	const unsigned short max_att = 10;
-	unsigned short attempt = 0;
-	ip::interprocess_exception* e = NULL;
-	for(attempt = 0; attempt < max_att; attempt++)
-	{
-		try{
-			segment = new ip::managed_shared_memory(ip::open_only, "stream_finder_dem");
-			dem = segment->find<Cell>("DEM").first;
-			break;
-		}
-		catch(ip::interprocess_exception& ex){
-			cout << "Hiccup getting shared memory in flowDirection on attempt "
-				<< attempt << ":\n" << ex.what() << "\n";
-			e = &ex;
-			sleep(2);
-		}
-	}
-	if(attempt == max_att)
-	{
-		cout << "Can't get shared memory in flowDirection.\n";
-		throw *e;
-	}
-	
 	//We don't deal with cells on the outer boundary because their default
 	//flow direction is outward and that is what we want.
 	if(!row) row++;
@@ -286,13 +255,12 @@ void flowDirection(int row, int end)
 		for(int column = 1; column < (Cell::cellsX-1); column++)
 		{
 			if(verbose) cout << '.';
-			linear(dem,row,column).flowDir = greatestSlope(dem, row, column);
+			linear(dem,row,column).flowDir = greatestSlope(row, column);
 		}
 	}
-	delete segment;
 }
 
-direction greatestSlope(Cell* dem, int row, int column)
+direction greatestSlope(int row, int column)
 {
 	vector<float> slopes(8,0);
 	//method 1 (rudiger: compare cross slopes)
@@ -344,133 +312,95 @@ direction greatestSlope(Cell* dem, int row, int column)
 	return intDirection(max);
 }
 
-void linearTo2d(int firstRow, int end, ip::managed_shared_memory::handle_t linearHandle)
+void linearTo2d(int firstRow, int end)
 {
-	float* linearData;
-	Cell *dem=NULL;
-	ip::managed_shared_memory *segment=NULL;
-	const unsigned short max_att = 10;
-	unsigned short attempt = 0;
-	ip::interprocess_exception* e = NULL;
-	for(attempt = 0; attempt < max_att; attempt++)
-	{
-		try{
-			segment = new ip::managed_shared_memory(ip::open_only, "stream_finder_dem");
-			dem = segment->find<Cell>("DEM").first;
-			linearData = (float*)segment->get_address_from_handle(linearHandle);
-			break;
-		}
-		catch(ip::interprocess_exception& ex){
-			cout << "Error accessing the shared memory objects in linearTo2d for attempt "
-				<< attempt << ":\n" << ex.what() << "\n";
-			e = &ex;
-			sleep(2);
-		}
-	}
-	if(attempt == max_att)
-	{
-		cout << "Can't get shared memory in linearTo2d.\n";
-		throw *e;
-	}
-	
 	int yp = firstRow;
 	if(firstRow == 0)
 	{
-		linear(dem,yp,0).fill(linear(linearData, yp, 0), yp, 0, northwest);
+		linear(dem,yp,0).fill(linear(pafScanline, yp, 0), yp, 0, northwest);
 		for(int xp = 1; xp<(Cell::cellsX-1); xp++)
 		{
-			linear(dem,yp,xp).fill(linear(linearData, yp, xp), yp, xp, north);
+			linear(dem,yp,xp).fill(linear(pafScanline, yp, xp), yp, xp, north);
 		}
-		linear(dem,yp,Cell::cellsX-1).fill(linear(linearData, yp, Cell::cellsX-1), yp, Cell::cellsX-1, northeast);
+		linear(dem,yp,Cell::cellsX-1).fill(linear(pafScanline, yp, Cell::cellsX-1), yp, Cell::cellsX-1, northeast);
 		yp++;
 	}
 	int lastNormRow = (end==Cell::cellsY) ? end-1 : end;
 	for(; yp<lastNormRow; yp++)
 	{
-		linear(dem,yp,0).fill(linear(linearData, yp, 0), yp, 0, west);
+		linear(dem,yp,0).fill(linear(pafScanline, yp, 0), yp, 0, west);
 		for(int xp = 1; xp<(Cell::cellsX-1); xp++)
 		{
 			if(verbose) cout << '-';
-			linear(dem,yp,xp).fill(linear(linearData, yp, xp), yp, xp);
+			linear(dem,yp,xp).fill(linear(pafScanline, yp, xp), yp, xp);
 		}
-		linear(dem,yp,Cell::cellsX-1).fill(linear(linearData, yp, Cell::cellsX-1), yp, Cell::cellsX-1, east);
+		linear(dem,yp,Cell::cellsX-1).fill(linear(pafScanline, yp, Cell::cellsX-1), yp, Cell::cellsX-1, east);
 	}
 	if(lastNormRow != end)
 	{
-		linear(dem,yp,0).fill(linear(linearData, yp, 0), yp, 0, southwest);
+		linear(dem,yp,0).fill(linear(pafScanline, yp, 0), yp, 0, southwest);
 		for(int xp = 1; xp<(Cell::cellsX-1); xp++)
 		{
-			linear(dem,yp,xp).fill(linear(linearData, yp, xp), yp, xp, south);
+			linear(dem,yp,xp).fill(linear(pafScanline, yp, xp), yp, xp, south);
 		}
-		linear(dem,yp,Cell::cellsX-1).fill(linear(linearData, yp, Cell::cellsX-1), yp, Cell::cellsX-1, southeast);
+		linear(dem,yp,Cell::cellsX-1).fill(linear(pafScanline, yp, Cell::cellsX-1), yp, Cell::cellsX-1, southeast);
 	}
-	delete segment;
 }
 
-void writeFiles(Cell* dem, fs::ofstream& sdem, fs::ofstream& meta, fs::ofstream& fdir, fs::ofstream& ftotal, Metadata& iniData)
+void writeSdem()
 {
-	//write Simplified DEM
 	for(int row=0; row<Cell::cellsY; row++)
 	{
 		for(int column=0; column<(Cell::cellsX-1); column++)
 		{
-			sdem << linear(dem,row,column).height << '\t';
+			*sDem << linear(dem,row,column).height << '\t';
 		}
-		sdem << linear(dem,row,Cell::cellsX-1).height << '\n';
+		*sDem << linear(dem,row,Cell::cellsX-1).height << '\n';
 	}
-	sdem.close();
+	sDem->close();
+}
 
-	//write Metadata INI
-	meta << fixed << setprecision(0) << "[Core]\npixel_size=" << iniData.physicalSize
+void writeMeta(Metadata& iniData)
+{
+	*meta << fixed << setprecision(0) << "[Core]\npixel_size=" << iniData.physicalSize
 			<< "\nx_pixels=" << Cell::cellsX << "\ny_pixels=" << Cell::cellsY
 			<< "\n[Display]\norigin_x=" << iniData.originX << "\norigin_y="
 			<< iniData.originY << "\nprojection=" << iniData.projection << "\n";
-	meta.close();
+	meta->close();
+}
 
-	//Write Flow Direction Grid
+void writeFlowDir()
+{
 	for(int row=0; row<Cell::cellsY; row++)
 	{
 		for(int column=0; column<(Cell::cellsX-1); column++)
 		{
-			fdir << (int)(linear(dem,row,column).flowDir) << '\t';
+			*flowDir << (int)(linear(dem,row,column).flowDir) << '\t';
 		}
-		fdir << (int)(linear(dem,row,Cell::cellsX-1).flowDir) << '\n';
+		*flowDir << (int)(linear(dem,row,Cell::cellsX-1).flowDir) << '\n';
 	}
-	fdir.close();
+	flowDir->close();
+}
 
-	//write Flow Total Grid
-	ftotal << fixed << setprecision(0);
+void writeFlowTotal()
+{
+	*flowTotal << fixed << setprecision(0);
 	for(int row=0; row<Cell::cellsY; row++)
 	{
 		int numOut = 0;
 		for(int column=0; column<(Cell::cellsX-1); column++)
 		{
 			numOut = linear(dem,row,column).flowTotal;
-			ftotal << numOut << '\t';
+			*flowTotal << numOut << '\t';
 		}
 		numOut = linear(dem,row,Cell::cellsX-1).flowTotal;
-		ftotal << numOut << '\n';
+		*flowTotal << numOut << '\n';
 	}
-	ftotal.close();
+	flowTotal->close();
 }
 
 void writeStdOut(Metadata iniData)
 {
-	Cell *dem=NULL;
-	ip::managed_shared_memory *segment=NULL;
-	try{
-		//Special shared memory where we can construct objects associated with a name.
-		//Connect to the already created shared memory segment+initialize needed resources
-		segment = new ip::managed_shared_memory(ip::open_only, "stream_finder_dem");  //segment name
-
-		//Find the vector using the c-string name
-		dem = segment->find<Cell>("DEM").first;
-	}
-	catch(ip::interprocess_exception& e){
-		cout << "Error accessing the shared memory objects in writeStdOut: " << e.what() << "\n";
-		throw;
-	}
-
 	cout << fixed;
 	//write Simplified DEM
 	for(int row=0; row<Cell::cellsY; row++)
@@ -512,39 +442,22 @@ void writeStdOut(Metadata iniData)
 		numOut = linear(dem,row,Cell::cellsX-1).flowTotal;
 		cout << numOut << '\n';
 	}
-	delete segment;
 }
 
 void flowTrace(unsigned long start, unsigned long end)
 {
-	Cell *dem=NULL;
-	ip::managed_shared_memory *segment=NULL;
-	const unsigned short max_att = 10;
-	unsigned short attempt = 0;
-	ip::interprocess_exception* e = NULL;
-	for(attempt = 0; attempt < max_att; attempt++)
+	if(verbose)
 	{
-		try{
-			segment = new ip::managed_shared_memory(ip::open_only, "stream_finder_dem");
-			dem = segment->find<Cell>("DEM").first;
-			break;
-		}
-		catch(ip::interprocess_exception& ex){
-			cout << "Error accessing the shared memory objects in flowTrace for attempt "
-				<< attempt << ":\n" << ex.what() << "\n";
-			e = &ex;
-			sleep(2);
-		}
-	}
-	if(attempt == max_att)
-	{
-		cout << "Can't get shared memory in flowTrace.\n";
-		throw *e;
+		ostringstream oss;
+		oss << "Calling flowTrace from " << start << " to " << end << '\n';
+		cout << oss.str();
 	}
 	
 	for(unsigned long cell = start; cell < end; cell++)
 	{
+		if(verbose) cout << '#';
 		edge(dem,cell).accumulate();
 	}
-	delete segment;
+	if(verbose) cout << '\n';
 }
+

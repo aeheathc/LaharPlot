@@ -32,9 +32,6 @@
 
 #include <boost/filesystem.hpp>
 #include <boost/filesystem/fstream.hpp>
-#include <boost/interprocess/allocators/allocator.hpp>
-#include <boost/interprocess/containers/vector.hpp>
-#include <boost/interprocess/managed_shared_memory.hpp>
 #include <boost/program_options.hpp> 
 #include <boost/thread.hpp>
 
@@ -47,7 +44,6 @@
 using namespace std;
 namespace po = boost::program_options;
 namespace fs = boost::filesystem;
-namespace ip = boost::interprocess;
 
 struct Metadata
 {
@@ -56,19 +52,23 @@ struct Metadata
 	string projection;	
 };
 
+Cell *dem;
+float *pafScanline;
+fs::ofstream *sDem, *meta, *flowDir, *flowTotal;
+
 bool cmdIn = false, fileOut = false, cmdOut = false, verbose = false;
 
 int main(int argc, char* argv[]);
 
 // Fills the DEM matrix using data provided in linear form.
-void linearTo2d(int firstRow, int end, ip::managed_shared_memory::handle_t linearHandle);
+void linearTo2d(int firstRow, int end);
 
 /*	Updates the DEM with correct flow direction information in rows
 	firstRow to (end-1). Usually called multiple times in parallel, on different
 	parts of the DEM.
 */
 void flowDirection(int firstRow, int end);
-direction greatestSlope(Cell* dem, int x, int y);
+direction greatestSlope(int x, int y);
 
 /*	Creates flow records for the Flow Total Grid in a certain part of the DEM.
 	Usually called multiple times in parallel, on different
@@ -76,8 +76,11 @@ direction greatestSlope(Cell* dem, int x, int y);
 */
 void flowTrace(unsigned long start, unsigned long end);
 
-void writeFiles(Cell* dem, fs::ofstream& sdem, fs::ofstream& meta,
-				fs::ofstream& fdir, fs::ofstream& ftotal, Metadata& iniData);
+void writeSdem();
+void writeMeta(Metadata& iniData);
+void writeFlowDir();
+void writeFlowTotal();
+
 void writeStdOut(Metadata iniData);
 
 #endif

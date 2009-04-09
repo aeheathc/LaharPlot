@@ -20,7 +20,12 @@
 #ifndef UTIL_H
 #define UTIL_H
 
+#include <iostream>
+#include <sstream>
+
 #include <boost/thread.hpp>
+
+using namespace std;
 
 //Use a 2D index over a 1D array.
 template<typename T>
