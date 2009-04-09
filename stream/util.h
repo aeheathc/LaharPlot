@@ -34,12 +34,19 @@ T& linear(T *array, int y, int x, int width = -1)
 //Index into a linear collection of elements on the OUTER EDGE of a matrix
 //stored in a 1D array
 template<typename T>
-T& edge(T *array, int x, int width = -1)
+T& edge(T *array, int x, int width = -1, int height = -1)
 {
-	static int cellsX = -1;
+	static int cellsX = -1, cellsY = -1;
 	if(width != -1) cellsX = width;
-	if(
-	return array[y*cellsX+x];
+	if(height != -1) cellsY = height;
+	if(x<cellsY) return x;
+	if(x > cellsX+cellsY*2-5) return array[x + (cellsX-2)*(cellsY-2)];
+	x -= width;
+	if(x%2 == 0)
+	{
+		return array[cellsX*(x/2+1)];
+	}
+	return array[cellsX*((x-1)/2+1) + (cellsX-1)];
 }
 //Trivial predicate that just uses the < operator of the subject
 struct Pred
