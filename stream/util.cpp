@@ -21,8 +21,10 @@
 
 void sleep(int sec)
 {
-	boost::xtime xt;
-	boost::xtime_get(&xt, boost::TIME_UTC);
-	xt.sec += sec;
-	boost::thread::sleep(xt);
+	try{
+		boost::xtime xt;
+		boost::xtime_get(&xt, boost::TIME_UTC);
+		xt.sec += sec;
+		boost::thread::sleep(xt);
+	}catch(...){}
 }

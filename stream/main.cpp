@@ -137,7 +137,6 @@ int main(int argc, char* argv[])
 		segment = new ip::managed_shared_memory(ip::create_only,
 							"stream_finder_dem",		//segment name
 							matrixBytes+linearBytes+1000);	//segment size in bytes
-		Cell::alloc_inst = new PointShmemAllocator(segment->get_segment_manager());
 		dem = segment->construct<Cell>("DEM")[Cell::cellsX * Cell::cellsY]();
 		pafScanline = (float*)segment->allocate(linearBytes);
 		linearHandle = segment->get_handle_from_address(pafScanline);
@@ -222,13 +221,16 @@ int main(int argc, char* argv[])
 	//make flow total grid
 	if(verbose) cout << "\nFinding flow totals...\n";
 	boost::thread_group flowTotalCalc;
+	const unsigned long edgeCells = (2*Cell::cellsX + 2*Cell::cellsY - 4);
+	const unsigned long cellsPerThread = edgeCells / threads;
+	edge(dem,0,Cell::cellsX,Cell::cellsY);	//initialize width and height in function
 	for(int thread=0; thread<(threads-1); thread++)
 	{
-		int firstRow = thread*rowsPerThread;
-		flowTotalCalc.add_thread(new boost::thread(flowTrace, firstRow, firstRow+rowsPerThread));
+		unsigned long firstCell = thread * cellsPerThread;
+		flowTotalCalc.add_thread(new boost::thread(flowTrace, firstCell, firstCell+cellsPerThread));
 		if(verbose) cout << "Assigned thread.\n";
 	}
-	flowTotalCalc.add_thread(new boost::thread(flowTrace, (threads-1)*rowsPerThread, Cell::cellsY));
+	flowTotalCalc.add_thread(new boost::thread(flowTrace, (threads-1)*cellsPerThread, edgeCells));
 	flowTotalCalc.join_all();
 
 	if(verbose) cout << "Writing output...\n";
@@ -240,7 +242,6 @@ int main(int argc, char* argv[])
 	writeout.join_all();
 	
 	//Free shared memory
-	delete Cell::alloc_inst;
 	segment->destroy<Cell>("DEM");
 	delete segment;
 	ip::shared_memory_object::remove("stream_finder_dem");
@@ -263,7 +264,7 @@ void flowDirection(int row, int end)
 			break;
 		}
 		catch(ip::interprocess_exception& ex){
-			cout << "Error accessing the shared memory objects in flowDirection for attempt "
+			cout << "Hiccup getting shared memory in flowDirection on attempt "
 				<< attempt << ":\n" << ex.what() << "\n";
 			e = &ex;
 			sleep(2);
@@ -444,10 +445,10 @@ void writeFiles(Cell* dem, fs::ofstream& sdem, fs::ofstream& meta, fs::ofstream&
 		int numOut = 0;
 		for(int column=0; column<(Cell::cellsX-1); column++)
 		{
-			numOut = linear(dem,row,column).flowTotal.size();
+			numOut = linear(dem,row,column).flowTotal;
 			ftotal << numOut << '\t';
 		}
-		numOut = linear(dem,row,Cell::cellsX-1).flowTotal.size();
+		numOut = linear(dem,row,Cell::cellsX-1).flowTotal;
 		ftotal << numOut << '\n';
 	}
 	ftotal.close();
@@ -505,16 +506,16 @@ void writeStdOut(Metadata iniData)
 		int numOut = 0;
 		for(int column=0; column<(Cell::cellsX-1); column++)
 		{
-			numOut = linear(dem,row,column).flowTotal.size();
+			numOut = linear(dem,row,column).flowTotal;
 			cout << numOut << '\t';
 		}
-		numOut = linear(dem,row,Cell::cellsX-1).flowTotal.size();
+		numOut = linear(dem,row,Cell::cellsX-1).flowTotal;
 		cout << numOut << '\n';
 	}
 	delete segment;
 }
 
-void flowTrace(int firstRow, int end)
+void flowTrace(unsigned long start, unsigned long end)
 {
 	Cell *dem=NULL;
 	ip::managed_shared_memory *segment=NULL;
@@ -540,60 +541,10 @@ void flowTrace(int firstRow, int end)
 		cout << "Can't get shared memory in flowTrace.\n";
 		throw *e;
 	}
-	for(int row = firstRow;row < end; row++)
+	
+	for(unsigned long cell = start; cell < end; cell++)
 	{
-		for(int column = 1; column < (Cell::cellsX-1); column++)
-		{
-			if(verbose) cout << '~';
-			try{
-				follow(dem, row, column);
-			}catch(BadFlowGrid e){
-				cout << e.what() << '\n';
-				exit(2);
-			}catch(...){
-				cout << "Could not follow.\n";
-				exit(1);
-			}
-		}
+		edge(dem,cell).accumulate();
 	}
 	delete segment;
 }
-
-void follow(Cell* dem, int row, int column)
-{
-	//If this cell was already part of another run's flow path,
-	//we have nothing to do.
-	cout << "follow.1\n";
-	if(linear(dem,row,column).flowTotal.size()) return;
-	cout << "follow.2\n";
-	Point current(row, column);
-	Point last(current);
-	cout << "follow.3\n";
-	for(flow(current, linear(dem, current).flowDir);
-		//make sure we are still inside the DEM
-		current.row>=0 && current.row<Cell::cellsY && current.column>=0 && current.column<Cell::cellsY;
-		//go to the next cell as per current flow direction
-		flow(current, linear(dem, current).flowDir) )
-	{
-		cout << "follow.4\n";
-		//insert the last cell's flow records into this one
-		linear(dem, current).flowTotal.insert(last);
-		linear(dem, current).flowTotal.insert(linear(dem, last).flowTotal.begin(),linear(dem, last).flowTotal.end());
-		cout << "follow.5\n";
-		//if we flow into the same cell again we know the flow grid is corrupt
-		if(linear(dem, current).flowTotal.find(Point(current.row, current.column)) != linear(dem, current).flowTotal.end())
-			throw oneBFG;
-		cout << "follow.6\n";
-		if(verbose)
-		{
-			ostringstream oss;
-			oss << "row=" << current.row << ", col=" << current.column << ", setsize=" << linear(dem, current).flowTotal.size() << '\n';
-			cout << oss.str();
-		}
-		cout << "follow.7\n";
-		last = current;
-		cout << "follow.8\n";
-	}
-	cout << "follow.9\n";
-}
-

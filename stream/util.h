@@ -39,7 +39,7 @@ T& edge(T *array, int x, int width = -1, int height = -1)
 	static int cellsX = -1, cellsY = -1;
 	if(width != -1) cellsX = width;
 	if(height != -1) cellsY = height;
-	if(x<cellsY) return x;
+	if(x<cellsY) return array[x];
 	if(x > cellsX+cellsY*2-5) return array[x + (cellsX-2)*(cellsY-2)];
 	x -= width;
 	if(x%2 == 0)

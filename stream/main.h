@@ -74,13 +74,7 @@ direction greatestSlope(Cell* dem, int x, int y);
 	Usually called multiple times in parallel, on different
 	parts of the DEM.
 */
-void flowTrace(int start, int end);
-class BadFlowGrid : public exception
-{
-	public:
-	virtual const char *what() const throw()
-		{return "Flow direction grid provides impossible situation.\n";}
-} oneBFG;
+void flowTrace(unsigned long start, unsigned long end);
 
 void writeFiles(Cell* dem, fs::ofstream& sdem, fs::ofstream& meta,
 				fs::ofstream& fdir, fs::ofstream& ftotal, Metadata& iniData);
