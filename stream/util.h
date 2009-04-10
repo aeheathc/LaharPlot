@@ -27,6 +27,8 @@
 
 using namespace std;
 
+extern boost::mutex cout_mutex;
+
 //Use a 2D index over a 1D array.
 template<typename T>
 T& linear(T *array, int y, int x, int width = -1)
@@ -59,6 +61,13 @@ struct Pred
 	template<typename P>
 	bool operator()(const P& l, const P& r) const {return l<r;}
 };
+
+template<typename T>
+void blast(const T& thing)
+{
+	boost::mutex::scoped_lock lock(cout_mutex);
+	cout << thing;
+}
 
 void sleep(int sec);
 

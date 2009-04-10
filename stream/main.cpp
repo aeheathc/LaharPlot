@@ -19,6 +19,8 @@
 
 #include "main.h"
 
+Cell *dem = NULL;
+
 int main(int argc, char* argv[])
 {
 	// Declare the supported options.
@@ -450,12 +452,12 @@ void flowTrace(unsigned long start, unsigned long end)
 	{
 		ostringstream oss;
 		oss << "Calling flowTrace from " << start << " to " << end << '\n';
-		cout << oss.str();
+		blast(oss.str());
 	}
 	
 	for(unsigned long cell = start; cell < end; cell++)
 	{
-		if(verbose) cout << '#';
+		if(verbose) blast('#');
 		edge(dem,cell).accumulate();
 	}
 	if(verbose) cout << '\n';

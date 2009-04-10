@@ -37,6 +37,8 @@ enum direction{north, northeast, east, southeast, south, southwest, west, northw
 
 direction intDirection(int dirIn);
 
+extern Cell *dem;
+
 //	Cell represents one space on the DEM.
 class Cell
 {

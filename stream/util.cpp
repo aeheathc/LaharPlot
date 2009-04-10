@@ -19,6 +19,8 @@
 
 #include "util.h"
 
+boost::mutex cout_mutex;
+
 void sleep(int sec)
 {
 	try{

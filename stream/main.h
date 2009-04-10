@@ -52,7 +52,7 @@ struct Metadata
 	string projection;	
 };
 
-Cell *dem;
+extern Cell *dem;
 float *pafScanline;
 fs::ofstream *sDem, *meta, *flowDir, *flowTotal;
 
