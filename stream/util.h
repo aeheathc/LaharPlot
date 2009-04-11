@@ -21,13 +21,14 @@
 #define UTIL_H
 
 #include <iostream>
+#include <queue>
 #include <sstream>
+#include <string>
 
 #include <boost/thread.hpp>
+#include <boost/thread/condition_variable.hpp>
 
 using namespace std;
-
-extern boost::mutex cout_mutex;
 
 //Use a 2D index over a 1D array.
 template<typename T>
@@ -46,15 +47,23 @@ T& edge(T *array, int x, int width = -1, int height = -1)
 	static int cellsX = -1, cellsY = -1;
 	if(width != -1) cellsX = width;
 	if(height != -1) cellsY = height;
-	if(x<cellsY) return array[x];
-	if(x > cellsX+cellsY*2-5) return array[x + (cellsX-2)*(cellsY-2)];
-	x -= width;
-	if(x%2 == 0)
+	if(x<cellsY) return array[x];	//if we're in the first row: direct map
+	/* for the last row, the edge index plus all of the non-edge cells exceeds
+		all but the last row of the DEM. The excess is mapped to the last row.
+	*/
+	if(x > cellsX+cellsY*2-5)
+	{
+		return array[x + (cellsX-2)*(cellsY-2)];
+	}
+	// for cells on the vertical edges of the DEM, we ignore the first row.
+	x -= cellsX;
+	if(x%2 == 0)	//even offsets represent the left edge of the dem
 	{
 		return array[cellsX*(x/2+1)];
 	}
-	return array[cellsX*((x-1)/2+1) + (cellsX-1)];
+	return array[cellsX*((x-1)/2+1) + (cellsX-1)];	//odd offset = right side
 }
+
 //Trivial predicate that just uses the < operator of the subject
 struct Pred
 {
@@ -62,13 +71,44 @@ struct Pred
 	bool operator()(const P& l, const P& r) const {return l<r;}
 };
 
-template<typename T>
-void blast(const T& thing)
-{
-	boost::mutex::scoped_lock lock(cout_mutex);
-	cout << thing;
-}
-
 void sleep(int sec);
+
+/*	threadsafe lgging mechanism that automatically decides what to write based
+	on the log level that the program was run with
+*/
+enum Loglevel {silent, normal, progress, debug, maximum};
+class Logger
+{
+	private:
+	boost::mutex cout_mutex;
+	//the program's log level
+	Loglevel level;
+	//the level with which to write anything for which no Loglevel is given
+	Loglevel setlevel;
+	
+	public:
+	Logger();
+	~Logger();
+	
+	void init(Loglevel lev);
+	
+	Logger& set(const Loglevel& type);
+	static Loglevel string2level(const string& str);
+	
+	template<typename T>
+	void write(const Loglevel& type, const T& t)
+	{
+		if(type>level) return;
+		boost::mutex::scoped_lock lock(cout_mutex);
+		cout << t;
+	}
+	
+	template<typename T>
+	Logger& operator<<(const T& t)
+	{
+		write(setlevel,t);
+		return *this;
+	}
+};
 
 #endif

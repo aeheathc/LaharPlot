@@ -19,8 +19,6 @@
 
 #include "util.h"
 
-boost::mutex cout_mutex;
-
 void sleep(int sec)
 {
 	try{
@@ -29,4 +27,29 @@ void sleep(int sec)
 		xt.sec += sec;
 		boost::thread::sleep(xt);
 	}catch(...){}
+}
+
+Logger::Logger() :level(normal), setlevel(maximum)
+{}
+
+Logger::~Logger() {}
+
+void Logger::init(Loglevel lev)
+{
+	level = lev;
+}
+
+Logger& Logger::set(const Loglevel& type)
+{
+	setlevel = type;
+	return *this;
+}
+
+Loglevel Logger::string2level(const string& str)
+{
+	if(str == "silent") return silent;
+	if(str == "normal") return normal;
+	if(str == "progress") return progress;
+	if(str == "debug") return debug;
+	throw 1;
 }

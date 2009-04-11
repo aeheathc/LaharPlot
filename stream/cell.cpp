@@ -70,84 +70,100 @@ void Cell::accumulate()
 {
 	ostringstream oss;
 	oss << "Calling accumulate on " << y << ',' << x << '\n';  //debug
-	blast( oss.str());
+	lg.write(debug, oss.str());
 	
 	Cell *adj = NULL;							//an adjacent cell
 	if(y > 0)
 	{
-		oss.str("Going north to ");
-		//adj = this - (1 * cellsX);		//north
-		adj = &linear(dem,y-1,x);
-		oss << adj->y << ',' << adj->x << '\n';
-		blast( oss.str());
-		if(adj->flowDir == south)		flowTotal += adj->getFlowTotal();
+		adj = &linear(dem,y-1,x);	//north
+		if(adj->flowDir == south)
+		{
+			oss.str("");
+			oss << "Going north to " << adj->y << ',' << adj->x << '\n';
+			lg.write(debug, oss.str());
+			flowTotal += adj->getFlowTotal() + 1;
+		}
 	}
 	if(y > 0 && x < (cellsX-1))
 	{
-		oss.str("Going northeast to ");
-		//adj = this - (1 * (cellsX-1));	//northeast
-		adj = &linear(dem,y-1,x+1);
-		oss << adj->y << ',' << adj->x << '\n';
-		blast( oss.str());
-		if(adj->flowDir == southwest)	flowTotal += adj->getFlowTotal();
+		adj = &linear(dem,y-1,x+1);	//northeast
+		if(adj->flowDir == southwest)
+		{
+			oss.str("");
+			oss << "Going northeast to " << adj->y << ',' << adj->x << '\n';
+			lg.write(debug, oss.str());
+			flowTotal += adj->getFlowTotal() + 1;
+		}
 	}
 	if(x < (cellsX-1))
 	{
-		oss.str("Going east to ");
-		//adj = this + 1;					//east
-		adj = &linear(dem,y,x+1);
-		oss << adj->y << ',' << adj->x << '\n';
-		blast( oss.str());
-		if(adj->flowDir == west)  		flowTotal += adj->getFlowTotal();
+		adj = &linear(dem,y,x+1);	//east
+		if(adj->flowDir == west)
+		{
+			oss.str("");
+			oss << "Going east to " << adj->y << ',' << adj->x << '\n';
+			lg.write(debug, oss.str());
+			flowTotal += adj->getFlowTotal() + 1;
+		}
 	}
 	if(x < (cellsX-1) && y < (cellsY-1))
 	{
-		oss.str("Going southeast to ");
-		//adj = this + (1 * (cellsX+1));	//southeast
-		adj = &linear(dem,y+1,x+1);
-		oss << adj->y << ',' << adj->x << '\n';
-		blast( oss.str());
-		if(adj->flowDir == northwest)	flowTotal += adj->getFlowTotal();
+		adj = &linear(dem,y+1,x+1);	//southeast
+		if(adj->flowDir == northwest)
+		{
+			oss.str("");
+			oss << "Going southeast to " << adj->y << ',' << adj->x << '\n';
+			lg.write(debug, oss.str());
+			flowTotal += adj->getFlowTotal() + 1;
+		}
 	}
 	if(y < (cellsY-1))
 	{
-		oss.str("Going south to ");
-		//adj = this + (1 * cellsX);		//south
-		adj = &linear(dem,y+1,x);
-		oss << adj->y << ',' << adj->x << '\n';
-		blast( oss.str());
-		if(adj->flowDir == north)		flowTotal += adj->getFlowTotal();
+		adj = &linear(dem,y+1,x);	//south
+		if(adj->flowDir == north)
+		{
+			oss.str("");
+			oss << "Going south to " << adj->y << ',' << adj->x << '\n';
+			lg.write(debug, oss.str());
+			flowTotal += adj->getFlowTotal() + 1;
+		}	
 	}
 	if(x>0 && y < (cellsY-1))
 	{
-		oss.str("Going southwest to ");
-		//adj = this + (1 * (cellsX-1));	//southwest
-		adj = &linear(dem,y+1,x-1);
-		oss << adj->y << ',' << adj->x << '\n';
-		blast( oss.str());
-		if(adj->flowDir == northeast)	flowTotal += adj->getFlowTotal();
+		adj = &linear(dem,y+1,x-1);	//southwest
+		if(adj->flowDir == northeast)
+		{
+			oss.str("");
+			oss << "Going southwest to " << adj->y << ',' << adj->x << '\n';
+			lg.write(debug, oss.str());
+			flowTotal += adj->getFlowTotal() + 1;
+		}
 	}
 	if(x>0)
 	{
-		oss.str("Going west to ");
-		//adj = this - 1;					//west
-		adj = &linear(dem,y,x-1);
-		oss << adj->y << ',' << adj->x << '\n';
-		blast( oss.str());
-		if(adj->flowDir == east)		flowTotal += adj->getFlowTotal();
+		adj = &linear(dem,y,x-1);	//west
+		if(adj->flowDir == east)
+		{
+			oss.str("");
+			oss << "Going west to " << adj->y << ',' << adj->x << '\n';
+			lg.write(debug, oss.str());
+			flowTotal += adj->getFlowTotal() + 1;
+		}
 	}
 	if(y>0 && x>0)
 	{
-		oss.str("Going northwest to ");
-		//adj = this - (1 * (cellsX+1));	//northwest
-		adj = &linear(dem,y-1,x-1);
-		oss << adj->y << ',' << adj->x << '\n';
-		blast( oss.str());
-		if(adj->flowDir == southeast)	flowTotal += adj->getFlowTotal();
+		adj = &linear(dem,y-1,x-1);	//northwest
+		if(adj->flowDir == southeast)
+		{
+			oss.str("");
+			oss << "Going northwest to " << adj->y << ',' << adj->x << '\n';
+			lg.write(debug, oss.str());
+			flowTotal += adj->getFlowTotal() + 1;
+		}
 	}
 	oss.str("");
-	oss << "Done calling accumulate on " << y << ',' << x << '\n';  //debug
-	blast( oss.str());
+	oss << "Done calling accumulate on " << y << ',' << x << '\n';
+	lg.write(debug, oss.str());
 }
 
 int Cell::cellsY;

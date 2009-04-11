@@ -52,11 +52,12 @@ struct Metadata
 	string projection;	
 };
 
+extern Logger lg;
 extern Cell *dem;
 float *pafScanline;
 fs::ofstream *sDem, *meta, *flowDir, *flowTotal;
 
-bool cmdIn = false, fileOut = false, cmdOut = false, verbose = false;
+bool cmdIn = false, fileOut = false, cmdOut = false, sendEOF = false;
 
 int main(int argc, char* argv[]);
 

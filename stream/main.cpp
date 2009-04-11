@@ -20,6 +20,7 @@
 #include "main.h"
 
 Cell *dem = NULL;
+Logger lg;
 
 int main(int argc, char* argv[])
 {
@@ -30,10 +31,13 @@ int main(int argc, char* argv[])
 		("input-file,f", po::value<string>(), "Read topography from input file <arg>")
 		("std-in,i", "Read topography from standard-in. Can't be used with --input-file.")
 		("output-file,o", po::value<string>(), "Output to files using the base name <arg>.")
-		("std-out,t", "Output to standard-out. May be used with --output-file. Overrides --verbose.")
+		("std-out,t",
+			"Output to standard-out. May be used with --output-file. Silences all lgging.")
 		("threads,r", po::value<int>(),
 			"Set number of threads for parallel calculations. Default is 4.")
-		("verbose,v", "Display detailed progress.")
+		("loglevel,l", po::value<string>(),
+			"Control the amount of status information.\nsilent = No status info.\nnormal = Prints error messages and major action statements.\nprogress = Prints a character for each cell processed.\ndebug = Prints verbose status information.")
+		("eof,e", "Sends an EOF to standard-out when done, even in silent mode.")
 	;
 	po::variables_map vm;
 	po::store(po::parse_command_line(argc, argv, desc), vm);
@@ -51,12 +55,29 @@ int main(int argc, char* argv[])
 	string infile = "", outfile = "";
 	cmdIn = vm.count("std-in");
 	cmdOut = vm.count("std-out");
-	verbose = vm.count("verbose");
+	sendEOF = vm.count("eof");
 	int threads = vm.count("threads") ? abs(vm["threads"].as<int>()) : 4;
 	sDem = new fs::ofstream;
 	meta = new fs::ofstream;
 	flowDir = new fs::ofstream;
 	flowTotal = new fs::ofstream;
+
+	//if Loglevel is specified and cout isn't being used for data output
+	if(vm.count("loglevel") && !cmdOut)
+	{
+		try{lg.init(Logger::string2level(vm["loglevel"].as<string>()));}
+		catch(...)
+		{
+			cout<<"Bad Loglevel. Try 'stream --help' for more information.\n";
+			return 1;
+		}
+	}else if(cmdOut){
+		//if cout is being used for data output
+		lg.init(silent);
+	}else{
+		//if cout is OK to use but Loglevel was not specified
+		lg.init(normal);
+	}
 	
 	if(vm.count("input-file"))
 	{
@@ -97,18 +118,18 @@ int main(int argc, char* argv[])
 
 	if(optError != "")
 	{
-		cout << "stream: " << optError << "\n";
+		lg.set(normal) << "stream: " << optError << "\n";
 		return 1;
 	}
 	
 	//Done setting up. Now, start reading the DEM.
-	if(verbose) cout << "Reading file...\n";
+	lg.set(normal) << "Reading file...\n";
 	GDALDataset  *poDataset;
 	GDALAllRegister();
 	poDataset = (GDALDataset*)GDALOpen(infile.c_str(), GA_ReadOnly);
 	if(poDataset == NULL)
 	{
-		cout << "There was a problem opening the topography file.\n";
+		lg.set(normal) << "There was a problem opening the topography file.\n";
 		return 1;
 	}
 
@@ -158,7 +179,7 @@ int main(int argc, char* argv[])
 	
 	if(Cell::cellsX < 2 || Cell::cellsY < 2 || inXSize != Cell::cellsX || inYSize != Cell::cellsY)
 	{
-		cout << "Something is wrong with the input DEM. Aborting.\n";
+		lg.set(normal) << "Something is wrong with the input DEM. Aborting.\n";
 		delete[] dem;
 		delete[] pafScanline;
 		return 1;
@@ -168,7 +189,7 @@ int main(int argc, char* argv[])
 	linear(dem,0,0,Cell::cellsX);
 		
 	//Fill in the sinkholes!
-	if(verbose) cout << "Filling sinkholes...\n";
+	lg.set(normal) << "Filling sinkholes...\n";
 	FillSinks filler(pafScanline, Cell::cellsY, Cell::cellsX, 1);
 	filler.fill();
 	
@@ -176,11 +197,9 @@ int main(int argc, char* argv[])
 	//The cells on the outside are made with default outward flow directions.
 	if(threads > Cell::cellsY) threads = Cell::cellsY;
 	int rowsPerThread = Cell::cellsY / threads;
-	if(verbose)
-	{
-		cout << "XSize=" << Cell::cellsX << ",YSize=" << Cell::cellsY << ",Cells="
-			<< (Cell::cellsX*Cell::cellsY) << "\nBuilding DEM...\n";
-	}
+	lg.set(progress) << "XSize=" << Cell::cellsX << ",YSize=" << Cell::cellsY
+		<< ",Cells=" << (Cell::cellsX*Cell::cellsY) << '\n';
+	lg.set(normal)	<< "Building DEM...\n";
 	boost::thread_group demFiller;
 	
 	for(int thread=0; thread<(threads-1); thread++)
@@ -199,7 +218,7 @@ int main(int argc, char* argv[])
 	if(fileOut)	writeout.add_thread(new boost::thread(writeSdem));
 	
 	//Now do calculations.
-	if(verbose) cout << "\nCalculating...\nFinding flow direction...\n";
+	lg.set(normal) << "\nCalculating...\nFinding flow direction...\n";
 	//make flow direction grid
 	boost::thread_group flowDirCalc;
 	for(int thread=0; thread<(threads-1); thread++)
@@ -212,7 +231,7 @@ int main(int argc, char* argv[])
 	if(fileOut)	writeout.add_thread(new boost::thread(writeFlowDir));
 
 	//make flow total grid
-	if(verbose) cout << "\nFinding flow totals...\n";
+	lg.set(normal) << "\nFinding flow totals...\n";
 	boost::thread_group flowTotalCalc;
 	const unsigned long edgeCells = (2*Cell::cellsX + 2*Cell::cellsY - 4);
 	const unsigned long cellsPerThread = edgeCells / threads;
@@ -221,12 +240,13 @@ int main(int argc, char* argv[])
 	{
 		unsigned long firstCell = thread * cellsPerThread;
 		flowTotalCalc.add_thread(new boost::thread(flowTrace, firstCell, firstCell+cellsPerThread));
-		if(verbose) cout << "Assigned thread.\n";
+		lg.write(debug, "Assigned thread.\n");
 	}
 	flowTotalCalc.add_thread(new boost::thread(flowTrace, (threads-1)*cellsPerThread, edgeCells));
 	flowTotalCalc.join_all();
+	lg.write(progress, '\n');
 
-	if(verbose) cout << "Writing output...\n";
+	lg.set(normal) << "Writing output...\n";
 	
 	//write output
 	if(fileOut)	writeout.add_thread(new boost::thread(writeFlowTotal));
@@ -241,7 +261,7 @@ int main(int argc, char* argv[])
 	delete[] dem;
 	
 	//tell any stdout-captors that we are done
-	cout << EOF;
+	if(sendEOF) cout << EOF;
 	return 0;
 }
 
@@ -256,7 +276,7 @@ void flowDirection(int row, int end)
 	{
 		for(int column = 1; column < (Cell::cellsX-1); column++)
 		{
-			if(verbose) cout << '.';
+			lg.write(progress, '.');
 			linear(dem,row,column).flowDir = greatestSlope(row, column);
 		}
 	}
@@ -333,7 +353,7 @@ void linearTo2d(int firstRow, int end)
 		linear(dem,yp,0).fill(linear(pafScanline, yp, 0), yp, 0, west);
 		for(int xp = 1; xp<(Cell::cellsX-1); xp++)
 		{
-			if(verbose) cout << '-';
+			lg.write(progress, '-');
 			linear(dem,yp,xp).fill(linear(pafScanline, yp, xp), yp, xp);
 		}
 		linear(dem,yp,Cell::cellsX-1).fill(linear(pafScanline, yp, Cell::cellsX-1), yp, Cell::cellsX-1, east);
@@ -448,18 +468,16 @@ void writeStdOut(Metadata iniData)
 
 void flowTrace(unsigned long start, unsigned long end)
 {
-	if(verbose)
-	{
-		ostringstream oss;
-		oss << "Calling flowTrace from " << start << " to " << end << '\n';
-		blast(oss.str());
-	}
+	ostringstream oss;
+	oss << "Calling flowTrace from " << start << " to " << end << '\n';
+	lg.write(debug, oss.str());
 	
 	for(unsigned long cell = start; cell < end; cell++)
 	{
-		if(verbose) blast('#');
+		lg.write(progress, '#');
+		oss.str(""); oss << "Seed accumulation " << cell << '\n';
+		lg.write(debug, oss.str());
 		edge(dem,cell).accumulate();
 	}
-	if(verbose) cout << '\n';
 }
 
