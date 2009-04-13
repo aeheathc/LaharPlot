@@ -1,9 +1,15 @@
+#include <wx/progdlg.h>
 #include <wx/filedlg.h>
 #include <wx/filename.h>
-#include <wx/platinfo.h>
 #include <wx/msgdlg.h>
+#include <wx/process.h>
+#include <wx/utils.h>
 
 #include <string>
+#include <sstream>
+#include <fstream>
+#include <iostream>
+#include <stdio.h>
 
 #include "frameDEMDialog.h"
 
@@ -46,25 +52,30 @@ void frameDEMDialog::OnOutputBrowse( wxCommandEvent& event )
 
 void frameDEMDialog::OnConvert( wxCommandEvent& event )
 {
-	// create option string
-	wxString opts;
-	opts = _(" -f ");
-	opts.append(DEMTextBox->GetValue());
-	opts.append(_(" -o "));
-	opts.append(OutputTextBox->GetValue());
+	wxString dtbValue = DEMTextBox->GetValue();
+	wxString otbValue = OutputTextBox->GetValue();
+	if (!dtbValue.IsNull() && !otbValue.IsNull()) {
+		// create option string
+		wxString opts;
+		opts = _("stream");
+		opts.append(_(" -f "));
+		opts.append(dtbValue);
+		opts.append(_(" -o "));
+		opts.append(otbValue);
+		opts.append(_(" -v"));
 
-	// get OS and set proper binary
-	wxPlatformInfo temp;
-	wxString bina;
-	wxString os = temp.GetOperatingSystemFamilyName();
-	if (os == _("Windows"))
-		bina = _("stream.exe");
-	else if (os == _("Unix"))
-		bina = _("stream");
+		wxProcess process;
+		//process.Redirect();
 
-	// append opts to binary string
-	bina.append(opts);
-
-	// execute command
-	system(bina.mb_str(wxConvUTF8));
+		//wxProgressDialog streamPBar (_("Running 'stream'"), _("doing something"), 100, this, wxPD_APP_MODAL | wxPD_AUTO_HIDE);
+		wxExecute(opts, wxEXEC_SYNC, &process);
+		/*wxInputStream* streamIn = process.GetInputStream();
+		//wxChar wxCharIn(streamIn->GetC());
+		while (process.Exists(process.GetPid())) {
+			//wxCharIn = streamIn->GetC();
+		}
+		wxMessageBox(_("Get Here"), _("Does it"));
+		delete streamIn;
+		streamPBar.Update(100);*/
+	}
 }

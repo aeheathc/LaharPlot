@@ -87,7 +87,7 @@ void tsv::loadtsv()
 			if (!haveMin || temp < min)
 			{
 				// non-existent point correction
-				if (temp != -32766)
+				if (temp > -10000)
 				{
 					min = temp;
 					haveMin = true;

@@ -29,6 +29,7 @@ class laharPlotFrame: public GUIFrame
         virtual void OnLoadSdem(wxCommandEvent& event);
         virtual void OnPaint(wxPaintEvent& event);
         virtual void OnScrollwheel(wxMouseEvent& event);
+        virtual void OnShowStreams(wxCommandEvent& event);
         void Zoom(float zLevel, wxCoord x, wxCoord y);
         void displaySDEM(wxDC *dc, wxProgressDialog *progDlg);
 };

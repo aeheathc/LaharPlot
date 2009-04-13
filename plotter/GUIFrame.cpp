@@ -60,6 +60,21 @@ GUIFrame::GUIFrame( wxWindow* parent, wxWindowID id, const wxString& title, cons
 	SDEMScroll->SetScrollRate( 5, 5 );
 	fgSizer2->Add( SDEMScroll, 1, wxEXPAND | wxALL, 3 );
 	
+	wxGridBagSizer* gbSizer2;
+	gbSizer2 = new wxGridBagSizer( 0, 0 );
+	gbSizer2->SetFlexibleDirection( wxBOTH );
+	gbSizer2->SetNonFlexibleGrowMode( wxFLEX_GROWMODE_SPECIFIED );
+	
+	showStreams = new wxCheckBox( this, wxID_ANY, wxT("Show Streams"), wxDefaultPosition, wxDefaultSize, 0 );
+	showStreams->SetValue(true);
+	
+	gbSizer2->Add( showStreams, wxGBPosition( 0, 0 ), wxGBSpan( 1, 1 ), wxALIGN_CENTER_VERTICAL|wxALL, 5 );
+	
+	streamThresh = new wxSlider( this, wxID_ANY, 500, 0, 1000, wxDefaultPosition, wxDefaultSize, wxSL_HORIZONTAL );
+	gbSizer2->Add( streamThresh, wxGBPosition( 0, 1 ), wxGBSpan( 1, 1 ), wxALL, 0 );
+	
+	fgSizer2->Add( gbSizer2, 1, wxEXPAND, 5 );
+	
 	this->SetSizer( fgSizer2 );
 	this->Layout();
 	
@@ -71,6 +86,7 @@ GUIFrame::GUIFrame( wxWindow* parent, wxWindowID id, const wxString& title, cons
 	this->Connect( menuHelpAbout->GetId(), wxEVT_COMMAND_MENU_SELECTED, wxCommandEventHandler( GUIFrame::OnAbout ) );
 	SDEMScroll->Connect( wxEVT_MOUSEWHEEL, wxMouseEventHandler( GUIFrame::OnScrollwheel ), NULL, this );
 	SDEMScroll->Connect( wxEVT_PAINT, wxPaintEventHandler( GUIFrame::OnPaint ), NULL, this );
+	showStreams->Connect( wxEVT_COMMAND_CHECKBOX_CLICKED, wxCommandEventHandler( GUIFrame::OnShowStreams ), NULL, this );
 }
 
 GUIFrame::~GUIFrame()
@@ -83,6 +99,7 @@ GUIFrame::~GUIFrame()
 	this->Disconnect( wxID_ANY, wxEVT_COMMAND_MENU_SELECTED, wxCommandEventHandler( GUIFrame::OnAbout ) );
 	SDEMScroll->Disconnect( wxEVT_MOUSEWHEEL, wxMouseEventHandler( GUIFrame::OnScrollwheel ), NULL, this );
 	SDEMScroll->Disconnect( wxEVT_PAINT, wxPaintEventHandler( GUIFrame::OnPaint ), NULL, this );
+	showStreams->Disconnect( wxEVT_COMMAND_CHECKBOX_CLICKED, wxCommandEventHandler( GUIFrame::OnShowStreams ), NULL, this );
 }
 
 DEMDialog::DEMDialog( wxWindow* parent, wxWindowID id, const wxString& title, const wxPoint& pos, const wxSize& size, long style ) : wxDialog( parent, id, title, pos, size, style )

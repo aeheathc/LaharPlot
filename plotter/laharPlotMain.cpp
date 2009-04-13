@@ -27,10 +27,13 @@
 #include <string>
 using namespace std;
 
+static float MINZOOM = .5;
+static float MAXZOOM = 4;
+
+float curZoom;
 tsv* curSDEM;
 wxBitmap* image;
 wxBitmap* display;
-float curZoom;
 
 laharPlotFrame::laharPlotFrame(wxFrame *frame)
     : GUIFrame(frame)
@@ -71,9 +74,17 @@ void laharPlotFrame::OnPaint(wxPaintEvent &event)
 	wxPaintDC dc(SDEMScroll);
 	SDEMScroll->DoPrepareDC(dc);
 
+	// testing
+	dc.SetUserScale(curZoom,curZoom);
+	if (image != NULL)
+		dc.DrawBitmap(*image, 0, 0, false);
+	// testing
+
+	/* works
 	// if the image exists, display it
 	if (display != NULL)
 		dc.DrawBitmap(*display, 0, 0, false);
+	works */
 }
 
 void laharPlotFrame::OnConvertDEM(wxCommandEvent& event)
@@ -131,6 +142,15 @@ void laharPlotFrame::OnLoadSdem(wxCommandEvent &event)
 	}
 }
 
+void laharPlotFrame::OnShowStreams(wxCommandEvent &event)
+{
+	if (showStreams->IsChecked()) {
+		// display image
+	} else {
+		// remove image
+	}
+}
+
 void laharPlotFrame::OnScrollwheel(wxMouseEvent &event)
 {
 	// check if control button is down
@@ -147,22 +167,45 @@ void laharPlotFrame::OnScrollwheel(wxMouseEvent &event)
 
 void laharPlotFrame::Zoom(float zChange, wxCoord x, wxCoord y)
 {
-	if (image != NULL && ((curZoom < 8 && zChange > 1) || (curZoom > .125 && zChange < 1)))
+	if (image != NULL && ((curZoom < MAXZOOM && zChange > 1) || (curZoom > MINZOOM && zChange < 1)))
 	{
 		wxProgressDialog zoomBar (_("Zooming"), _("Scaling"), 100, this, wxPD_APP_MODAL | wxPD_AUTO_HIDE);
 
 		// change current zoom level
-		curZoom *= zChange;
-		if (curZoom > 8)
-			curZoom = 8;
-		if (curZoom < .125)
-			curZoom = .125;
 
+		// testing
+		float tempPreZoom = curZoom;
+		// testing
+
+		curZoom *= zChange;
+
+		// testing
+		float tempPostZoom = curZoom;
+		// testing
+		if (curZoom > MAXZOOM)
+			curZoom = MAXZOOM;
+		if (curZoom < MINZOOM)
+			curZoom = MINZOOM;
+
+		// testing
+		if (tempPostZoom != curZoom) {
+			zChange = curZoom / tempPreZoom;
+		}
+		// testing
+
+		/* works
 		// zoom image
 		wxImage wxi = image->ConvertToImage();
 		int zwidth = int (wxi.GetWidth() * curZoom);
 		int zheight = int (wxi.GetHeight() * curZoom);
+		delete display;
 		display = new wxBitmap(wxi.Scale(zwidth, zheight));
+		works */
+
+		//testing
+		int zwidth = int (image->GetWidth() * curZoom);
+		int zheight = int (image->GetHeight() * curZoom);
+		//testing
 
 		// get information for centering
 		int panel_width, panel_height, cur_x, cur_y;
@@ -172,6 +215,8 @@ void laharPlotFrame::Zoom(float zChange, wxCoord x, wxCoord y)
 		// calculate position for proper centering
 		x = int ((cur_x + x) * zChange) - int (.5 * panel_width);
 		y = int ((cur_y + y) * zChange) - int (.5 * panel_height);
+		if (x < 0) x = 0;
+		if (y < 0) y = 0;
 
 		// set scrollbars and refresh
 		SDEMScroll->SetScrollbars(1, 1, zwidth, zheight, x, y);
@@ -208,7 +253,7 @@ void laharPlotFrame::displaySDEM(wxDC *dc, wxProgressDialog* progDlg)
 			{
 				// figure out shade of  point
 				int color;
-				if (*elem == -32766)
+				if (*elem <= -10000)
 					color = 0;
 				else
 					color = 255 - int ((sdemMax - *elem) * incr);

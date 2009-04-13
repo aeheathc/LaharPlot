@@ -19,6 +19,9 @@
 #include <wx/settings.h>
 #include <wx/statusbr.h>
 #include <wx/scrolwin.h>
+#include <wx/checkbox.h>
+#include <wx/slider.h>
+#include <wx/gbsizer.h>
 #include <wx/sizer.h>
 #include <wx/frame.h>
 #include <wx/stattext.h>
@@ -48,6 +51,8 @@ class GUIFrame : public wxFrame
 		wxMenu* helpMenu;
 		wxStatusBar* statusBar;
 		wxScrolledWindow* SDEMScroll;
+		wxCheckBox* showStreams;
+		wxSlider* streamThresh;
 		
 		// Virtual event handlers, overide them in your derived class
 		virtual void OnClose( wxCloseEvent& event ){ event.Skip(); }
@@ -57,6 +62,7 @@ class GUIFrame : public wxFrame
 		virtual void OnAbout( wxCommandEvent& event ){ event.Skip(); }
 		virtual void OnScrollwheel( wxMouseEvent& event ){ event.Skip(); }
 		virtual void OnPaint( wxPaintEvent& event ){ event.Skip(); }
+		virtual void OnShowStreams( wxCommandEvent& event ){ event.Skip(); }
 		
 	
 	public:
