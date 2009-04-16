@@ -36,7 +36,7 @@ int main(int argc, char* argv[])
 		("threads,r", po::value<int>(),
 			"Set number of threads for parallel calculations. Default is 4.")
 		("loglevel,l", po::value<string>(),
-			"Control the amount of status information.\nsilent = No status info.\nnormal = Prints error messages and major action statements.\nprogress = Prints a character for each cell processed.\ndebug = Prints verbose status information.")
+			"Control the amount of status information.\nsilent = No status info.\nnormal = Prints error messages and major action statements.\nprogress = Prints a character for each row processed.\ndebug = Prints verbose status information.")
 		("eof,e", "Sends an EOF to standard-out when done, even in silent mode.")
 	;
 	po::variables_map vm;
