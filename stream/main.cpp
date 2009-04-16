@@ -32,7 +32,7 @@ int main(int argc, char* argv[])
 		("std-in,i", "Read topography from standard-in. Can't be used with --input-file.")
 		("output-file,o", po::value<string>(), "Output to files using the base name <arg>.")
 		("std-out,t",
-			"Output to standard-out. May be used with --output-file. Silences all lgging.")
+			"Output to standard-out. May be used with --output-file. Silences all logging.")
 		("threads,r", po::value<int>(),
 			"Set number of threads for parallel calculations. Default is 4.")
 		("loglevel,l", po::value<string>(),
@@ -190,7 +190,7 @@ int main(int argc, char* argv[])
 		
 	//Fill in the sinkholes!
 	lg.set(normal) << "Filling sinkholes...\n";
-	FillSinks filler(pafScanline, Cell::cellsY, Cell::cellsX, 1);
+	FillSinks filler(pafScanline, Cell::cellsY, Cell::cellsX, 0.00000001);
 	filler.fill();
 	
 	//We have the data from the file, now we make the data 2-dimensional for easier reading.
@@ -274,9 +274,9 @@ void flowDirection(int row, int end)
 	
 	for(;row < end; row++)
 	{
+		lg.write(progress, '.');
 		for(int column = 1; column < (Cell::cellsX-1); column++)
 		{
-			lg.write(progress, '.');
 			linear(dem,row,column).flowDir = greatestSlope(row, column);
 		}
 	}
@@ -350,10 +350,10 @@ void linearTo2d(int firstRow, int end)
 	int lastNormRow = (end==Cell::cellsY) ? end-1 : end;
 	for(; yp<lastNormRow; yp++)
 	{
+		lg.write(progress, '-');
 		linear(dem,yp,0).fill(linear(pafScanline, yp, 0), yp, 0, west);
 		for(int xp = 1; xp<(Cell::cellsX-1); xp++)
 		{
-			lg.write(progress, '-');
 			linear(dem,yp,xp).fill(linear(pafScanline, yp, xp), yp, xp);
 		}
 		linear(dem,yp,Cell::cellsX-1).fill(linear(pafScanline, yp, Cell::cellsX-1), yp, Cell::cellsX-1, east);

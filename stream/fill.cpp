@@ -19,7 +19,7 @@
 
 #include "fill.h"
 
-FillSinks::FillSinks(float* linearDem, int nYSize, int nXSize, double minimumSlope = 0)
+FillSinks::FillSinks(float* linearDem, int nYSize, int nXSize, double minimumSlope)
 	: minslope(minimumSlope), cellsY(nYSize), cellsX(nXSize), pDEM(linearDem)
 {}
 

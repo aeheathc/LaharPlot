@@ -35,7 +35,7 @@ extern Logger lg;
 class FillSinks
 {
 	public:
-	FillSinks(float* linearDem, int nYSize, int nXSize, double minimumSlope);
+	FillSinks(float* linearDem, int nYSize, int nXSize, double minimumSlope = 0);
 	~FillSinks();
 	void fill();
 	static int neighborX(int direction, int column);
