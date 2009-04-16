@@ -70,8 +70,19 @@ GUIFrame::GUIFrame( wxWindow* parent, wxWindowID id, const wxString& title, cons
 	
 	gbSizer2->Add( showStreams, wxGBPosition( 0, 0 ), wxGBSpan( 1, 1 ), wxALIGN_CENTER_VERTICAL|wxALL, 5 );
 	
+	m_radioBtn3 = new wxRadioButton( this, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxRB_GROUP );
+	gbSizer2->Add( m_radioBtn3, wxGBPosition( 0, 1 ), wxGBSpan( 1, 1 ), wxALIGN_CENTER_VERTICAL|wxALL, 5 );
+	
 	streamThresh = new wxSlider( this, wxID_ANY, 500, 0, 1000, wxDefaultPosition, wxDefaultSize, wxSL_HORIZONTAL );
-	gbSizer2->Add( streamThresh, wxGBPosition( 0, 1 ), wxGBSpan( 1, 1 ), wxALL, 0 );
+	gbSizer2->Add( streamThresh, wxGBPosition( 0, 2 ), wxGBSpan( 1, 1 ), wxALIGN_CENTER_VERTICAL|wxALL, 0 );
+	
+	m_radioBtn4 = new wxRadioButton( this, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0 );
+	m_radioBtn4->SetValue( true ); 
+	gbSizer2->Add( m_radioBtn4, wxGBPosition( 0, 3 ), wxGBSpan( 1, 1 ), wxALIGN_CENTER_VERTICAL|wxALL, 5 );
+	
+	m_textCtrl3 = new wxTextCtrl( this, wxID_ANY, wxEmptyString, wxDefaultPosition, wxSize( 48,-1 ), 0 );
+	m_textCtrl3->SetMaxLength( 6 ); 
+	gbSizer2->Add( m_textCtrl3, wxGBPosition( 0, 4 ), wxGBSpan( 1, 1 ), wxALIGN_CENTER_VERTICAL|wxALL, 5 );
 	
 	fgSizer2->Add( gbSizer2, 1, wxEXPAND, 5 );
 	

@@ -27,13 +27,14 @@
 #include <string>
 using namespace std;
 
-static float MINZOOM = .5;
-static float MAXZOOM = 4;
+static float MINZOOM = .125;
+static float MAXZOOM = 8;
 
 float curZoom;
 tsv* curSDEM;
 wxBitmap* image;
 wxBitmap* display;
+wxBitmap* streams[100];
 
 laharPlotFrame::laharPlotFrame(wxFrame *frame)
     : GUIFrame(frame)
@@ -74,17 +75,16 @@ void laharPlotFrame::OnPaint(wxPaintEvent &event)
 	wxPaintDC dc(SDEMScroll);
 	SDEMScroll->DoPrepareDC(dc);
 
-	// testing
-	dc.SetUserScale(curZoom,curZoom);
-	if (image != NULL)
-		dc.DrawBitmap(*image, 0, 0, false);
-	// testing
-
-	/* works
-	// if the image exists, display it
-	if (display != NULL)
-		dc.DrawBitmap(*display, 0, 0, false);
-	works */
+	if (curZoom >= 1)
+	{
+		dc.SetUserScale(curZoom,curZoom);
+		if (image != NULL)
+			dc.DrawBitmap(*image, 0, 0, false);
+	} else {
+		dc.SetUserScale(1,1);
+		if (display != NULL)
+			dc.DrawBitmap(*display, 0, 0, false);
+	}
 }
 
 void laharPlotFrame::OnConvertDEM(wxCommandEvent& event)
@@ -107,38 +107,7 @@ void laharPlotFrame::OnLoadSdem(wxCommandEvent &event)
 		path.append( wxFileName::GetPathSeparator() );
 		path.append( openSdem.GetFilename() );
 
-		// progress bar
-		wxProgressDialog sdemLoadBar (_("Loading SDEM"), _("Parsing TSV file"), 100, this, wxPD_APP_MODAL | wxPD_AUTO_HIDE);
-		sdemLoadBar.SetSize(300, 120);
-
-		// set current file
-		curSDEM->setFileName(path);
-
-		// update progress
-		sdemLoadBar.Update(50,_("Drawing SDEM"));
-
-		int sw = curSDEM->front().size();
-		int sh = curSDEM->size();
-
-		// create dc, and bitmap
-		wxMemoryDC memdc;
-		image = new wxBitmap( sw,sh );
-		memdc.SelectObject(*image);
-
-		// display SDEM on bitmap
-		displaySDEM(&memdc, &sdemLoadBar);
-		wxImage wxi = image->ConvertToImage();
-		display = new wxBitmap(wxi.Scale(image->GetWidth(), image->GetHeight()));
-
-		// unselect bitmap, for safe destruction
-		memdc.SelectObject(wxNullBitmap);
-
-		// set and refresh scrollwindow
-		SDEMScroll->SetScrollbars(1, 1, sw, sh, 0, 0);
-		SDEMScroll->Refresh();
-
-		// update progress
-		sdemLoadBar.Update(100);
+		SetFile(path);
 	}
 }
 
@@ -165,47 +134,78 @@ void laharPlotFrame::OnScrollwheel(wxMouseEvent &event)
 	}
 }
 
+void laharPlotFrame::SetFile(wxString file)
+{
+	// progress bar
+	wxProgressDialog sdemLoadBar (_("Loading SDEM"), _(""), 100, this, wxPD_APP_MODAL | wxPD_AUTO_HIDE);
+	sdemLoadBar.SetSize(300, 120);
+
+	// clear old image
+	delete image;
+
+	// set current file
+	curSDEM->setFileName(file, &sdemLoadBar);
+
+	// update progress
+	sdemLoadBar.Update(50,_("Drawing SDEM"));
+
+	int sw = curSDEM->front().size();
+	int sh = curSDEM->size();
+
+	// create dc, and bitmap
+	wxMemoryDC memdc;
+	image = new wxBitmap( sw,sh );
+	memdc.SelectObject(*image);
+
+	// display SDEM on bitmap
+	displaySDEM(&memdc, &sdemLoadBar);
+	wxImage wxi = image->ConvertToImage();
+	display = new wxBitmap(wxi.Scale(image->GetWidth(), image->GetHeight()));
+
+	// unselect bitmap, for safe destruction
+	memdc.SelectObject(wxNullBitmap);
+
+	// set and refresh scrollwindow
+	SDEMScroll->SetScrollbars(1, 1, sw, sh, 0, 0);
+	SDEMScroll->Refresh();
+
+	// update progress
+	sdemLoadBar.Update(100);
+}
+
 void laharPlotFrame::Zoom(float zChange, wxCoord x, wxCoord y)
 {
 	if (image != NULL && ((curZoom < MAXZOOM && zChange > 1) || (curZoom > MINZOOM && zChange < 1)))
 	{
-		wxProgressDialog zoomBar (_("Zooming"), _("Scaling"), 100, this, wxPD_APP_MODAL | wxPD_AUTO_HIDE);
-
-		// change current zoom level
-
-		// testing
+		// calculate new curzoom
 		float tempPreZoom = curZoom;
-		// testing
-
 		curZoom *= zChange;
-
-		// testing
 		float tempPostZoom = curZoom;
-		// testing
 		if (curZoom > MAXZOOM)
 			curZoom = MAXZOOM;
 		if (curZoom < MINZOOM)
 			curZoom = MINZOOM;
 
-		// testing
+		// correct for over/under zooms
 		if (tempPostZoom != curZoom) {
 			zChange = curZoom / tempPreZoom;
 		}
-		// testing
 
-		/* works
-		// zoom image
-		wxImage wxi = image->ConvertToImage();
-		int zwidth = int (wxi.GetWidth() * curZoom);
-		int zheight = int (wxi.GetHeight() * curZoom);
-		delete display;
-		display = new wxBitmap(wxi.Scale(zwidth, zheight));
-		works */
-
-		//testing
-		int zwidth = int (image->GetWidth() * curZoom);
-		int zheight = int (image->GetHeight() * curZoom);
-		//testing
+		// calculate zoom
+		int zwidth = 0,
+			zheight = 0;
+		if (curZoom >= 1)
+		{
+			zwidth = int (image->GetWidth() * curZoom);
+			zheight = int (image->GetHeight() * curZoom);
+		} else {
+			// create zoomed out image
+			delete display;
+			wxImage wxi = image->ConvertToImage();
+			zwidth = int (wxi.GetWidth() * curZoom);
+			zheight = int (wxi.GetHeight() * curZoom);
+			display = new wxBitmap(wxi.Scale(zwidth, zheight));
+		}
 
 		// get information for centering
 		int panel_width, panel_height, cur_x, cur_y;
@@ -221,8 +221,6 @@ void laharPlotFrame::Zoom(float zChange, wxCoord x, wxCoord y)
 		// set scrollbars and refresh
 		SDEMScroll->SetScrollbars(1, 1, zwidth, zheight, x, y);
 		SDEMScroll->Refresh();
-
-		zoomBar.Update(100);
 	}
 }
 
@@ -269,7 +267,7 @@ void laharPlotFrame::displaySDEM(wxDC *dc, wxProgressDialog* progDlg)
 
 			// move iterator
 			demLine++;
-			progDlg->Update(50 + (i * (49.0 / curSDEM->size())));
+			progDlg->Update(50 + (i * (49.9 / curSDEM->size())));
 		}
 	}
 }

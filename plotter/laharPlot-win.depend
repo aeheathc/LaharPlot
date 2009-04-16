@@ -529,13 +529,14 @@
 1186436394 c:\wxwidgets-2.8.9\include\wx\univ\theme.h
 	"wx/string.h"
 
-1239268611 c:\users\tim\documents\codeblocks\laharplot\laharplotmain.h
+1239862352 c:\users\tim\documents\codeblocks\laharplot\laharplotmain.h
 	<wx/progdlg.h>
+	<wx/string.h>
 	"laharPlotApp.h"
 	"GUIFrame.h"
 	"tsv.h"
 
-1239268598 c:\users\tim\documents\codeblocks\laharplot\guiframe.h
+1239845667 c:\users\tim\documents\codeblocks\laharplot\guiframe.h
 	<wx/string.h>
 	<wx/bitmap.h>
 	<wx/image.h>
@@ -548,12 +549,13 @@
 	<wx/statusbr.h>
 	<wx/scrolwin.h>
 	<wx/checkbox.h>
+	<wx/radiobut.h>
 	<wx/slider.h>
+	<wx/textctrl.h>
 	<wx/gbsizer.h>
 	<wx/sizer.h>
 	<wx/frame.h>
 	<wx/stattext.h>
-	<wx/textctrl.h>
 	<wx/button.h>
 	<wx/dialog.h>
 
@@ -859,7 +861,7 @@
 
 1186436452 c:\wxwidgets-2.8.9\include\wx\msw\frame.h
 
-1239268598 source:c:\users\tim\documents\codeblocks\laharplot\guiframe.cpp
+1239845667 source:c:\users\tim\documents\codeblocks\laharplot\guiframe.cpp
 	"wx/wxprec.h"
 	<wx/wx.h>
 	"GUIFrame.h"
@@ -1790,7 +1792,7 @@
 
 1186436452 c:\wxwidgets-2.8.9\include\wx\msw\filedlg.h
 
-1239429549 source:c:\users\tim\documents\codeblocks\laharplot\laharplotmain.cpp
+1239845763 source:c:\users\tim\documents\codeblocks\laharplot\laharplotmain.cpp
 	"wx_pch.h"
 	"laharPlotMain.h"
 	"frameDEMDialog.h"
@@ -1818,12 +1820,14 @@
 	<vector>
 	<wx/string.h>
 
-1237487804 c:\users\tim\documents\codeblocks\laharplot\tsv.h
+1239837893 c:\users\tim\documents\codeblocks\laharplot\tsv.h
 	<list>
 	<wx/string.h>
+	<wx/progdlg.h>
 
-1239429970 source:c:\users\tim\documents\codeblocks\laharplot\tsv.cpp
+1239838881 source:c:\users\tim\documents\codeblocks\laharplot\tsv.cpp
 	"tsv.h"
+	<wx/msgdlg.h>
 	<string>
 	<iostream>
 	<sstream>
@@ -1845,7 +1849,7 @@
 1238039416 c:\users\tim\documents\codeblocks\laharplot\streamoptionsframe.h
 	"GUIFrame.h"
 
-1239429041 source:c:\users\tim\documents\codeblocks\laharplot\framedemdialog.cpp
+1239855217 source:c:\users\tim\documents\codeblocks\laharplot\framedemdialog.cpp
 	<wx/progdlg.h>
 	<wx/filedlg.h>
 	<wx/filename.h>
@@ -1859,7 +1863,8 @@
 	<stdio.h>
 	"frameDEMDialog.h"
 
-1238046659 c:\users\tim\documents\codeblocks\laharplot\framedemdialog.h
+1239861846 c:\users\tim\documents\codeblocks\laharplot\framedemdialog.h
+	"laharPlotMain.h"
 	"GUIFrame.h"
 
 1186436492 c:\wxwidgets-2.8.9\include\wx\process.h

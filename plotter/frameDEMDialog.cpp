@@ -5,19 +5,15 @@
 #include <wx/process.h>
 #include <wx/utils.h>
 
-#include <string>
-#include <sstream>
-#include <fstream>
-#include <iostream>
-#include <stdio.h>
-
 #include "frameDEMDialog.h"
 
-frameDEMDialog::frameDEMDialog( wxWindow* parent )
+laharPlotFrame* par;
+
+frameDEMDialog::frameDEMDialog( laharPlotFrame* parent )
 :
 DEMDialog( parent )
 {
-
+	par = parent;
 }
 
 void frameDEMDialog::OnBrowseDEM( wxCommandEvent& event )
@@ -29,7 +25,12 @@ void frameDEMDialog::OnBrowseDEM( wxCommandEvent& event )
 		wxString path;
 		path.append( openDem.GetDirectory() );
 		path.append( wxFileName::GetPathSeparator() );
+		wxString pathTwo = path;
+		pathTwo.append(_("new"));
 		path.append( openDem.GetFilename() );
+
+		if (OutputTextBox->GetValue() == _(""))
+			OutputTextBox->SetValue(pathTwo);
 
 		DEMTextBox->SetValue(path);
 	}
@@ -54,7 +55,8 @@ void frameDEMDialog::OnConvert( wxCommandEvent& event )
 {
 	wxString dtbValue = DEMTextBox->GetValue();
 	wxString otbValue = OutputTextBox->GetValue();
-	if (!dtbValue.IsNull() && !otbValue.IsNull()) {
+	if (!dtbValue.IsNull() && !otbValue.IsNull())
+	{
 		// create option string
 		wxString opts;
 		opts = _("stream");
@@ -62,20 +64,63 @@ void frameDEMDialog::OnConvert( wxCommandEvent& event )
 		opts.append(dtbValue);
 		opts.append(_(" -o "));
 		opts.append(otbValue);
-		opts.append(_(" -v"));
+		opts.append(_(" -l progress -e"));
 
-		wxProcess process;
-		//process.Redirect();
+		wxProcess* process = wxProcess::Open(opts);
+		process->Redirect();
+		wxInputStream* streamIn = process->GetInputStream();
 
-		//wxProgressDialog streamPBar (_("Running 'stream'"), _("doing something"), 100, this, wxPD_APP_MODAL | wxPD_AUTO_HIDE);
-		wxExecute(opts, wxEXEC_SYNC, &process);
-		/*wxInputStream* streamIn = process.GetInputStream();
-		//wxChar wxCharIn(streamIn->GetC());
-		while (process.Exists(process.GetPid())) {
-			//wxCharIn = streamIn->GetC();
+		wxProgressDialog streamPBar (_("Running 'stream'"), _("Filling Sinkholes... (May take a while.)"), 100, this, wxPD_APP_MODAL | wxPD_AUTO_HIDE);
+		streamPBar.SetSize(300, 120);
+		wxChar charIn;
+		long cells;
+
+		if (streamIn != NULL) {
+			int eq = 0, i = 0, j = 0, k = 0;
+			while (!streamIn->Eof())
+			{
+				charIn = streamIn->GetC();
+				if (charIn == '=')
+				{
+					eq++;
+					if (eq == 3)
+					{
+						wxString num = _("");
+						charIn = streamIn->GetC();
+						while (charIn != '\n')
+						{
+							num.append(charIn);
+							charIn = streamIn->GetC();
+						}
+						num.ToLong(&cells);
+					}
+				}
+				if (charIn == '-')
+				{
+					i++;
+					if (i % 1000 == 0)
+						streamPBar.Update(15.0 * ((1.0 * i) / cells), _("Building DEM..."));
+				}
+				if (charIn == '.')
+				{
+					j++;
+					if (j % 1000 == 0)
+						streamPBar.Update(15 + (39 * ((1.0 * j) / cells)), _("Finding Flow Direction..."));
+				}
+				if (charIn == '#')
+				{
+					k++;
+					if (k % 1000 == 0)
+						streamPBar.Update(90, _("Finding Flow Totals..."));
+				}
+			}
 		}
-		wxMessageBox(_("Get Here"), _("Does it"));
-		delete streamIn;
-		streamPBar.Update(100);*/
+		streamIn->~wxInputStream();
+		delete process;
+		streamPBar.Update(100);
+
+		par->SetFile(otbValue.append(_("-sdem.tsv")));
+
+		EndDialog(1);
 	}
 }

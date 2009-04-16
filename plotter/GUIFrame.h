@@ -20,12 +20,13 @@
 #include <wx/statusbr.h>
 #include <wx/scrolwin.h>
 #include <wx/checkbox.h>
+#include <wx/radiobut.h>
 #include <wx/slider.h>
+#include <wx/textctrl.h>
 #include <wx/gbsizer.h>
 #include <wx/sizer.h>
 #include <wx/frame.h>
 #include <wx/stattext.h>
-#include <wx/textctrl.h>
 #include <wx/button.h>
 #include <wx/dialog.h>
 
@@ -52,7 +53,10 @@ class GUIFrame : public wxFrame
 		wxStatusBar* statusBar;
 		wxScrolledWindow* SDEMScroll;
 		wxCheckBox* showStreams;
+		wxRadioButton* m_radioBtn3;
 		wxSlider* streamThresh;
+		wxRadioButton* m_radioBtn4;
+		wxTextCtrl* m_textCtrl3;
 		
 		// Virtual event handlers, overide them in your derived class
 		virtual void OnClose( wxCloseEvent& event ){ event.Skip(); }

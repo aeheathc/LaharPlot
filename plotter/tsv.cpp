@@ -9,6 +9,8 @@
 
 #include "tsv.h"
 
+#include <wx/msgdlg.h>
+
 #include <string>
 #include <iostream>
 #include <sstream>
@@ -17,6 +19,7 @@ using namespace std;
 
 string tsvFileName;
 float tsvMax = 0, tsvMin = 0;
+int tsvLen = 0;
 
 tsv::tsv(wxString filename)
 {
@@ -37,10 +40,13 @@ float tsv::getMax()
 	return tsvMax;
 }
 
-void tsv::setFileName(wxString filename)
+void tsv::setFileName(wxString filename, wxProgressDialog* progDlg)
 {
     tsvFileName = filename.mb_str(wxConvUTF8);
-    loadtsv();
+    progDlg->Update(0,_("Finding Length"));
+    findLength();
+    progDlg->Update(0,_("Parsing File"));
+    loadtsv(progDlg);
 }
 
 const char* tsv::getFileName()
@@ -48,9 +54,24 @@ const char* tsv::getFileName()
 	return tsvFileName.c_str();
 }
 
-void tsv::loadtsv()
+void tsv::findLength()
+{
+	int i = 0;
+	string line;
+	ifstream file (tsvFileName.c_str());
+	while (!file.eof())
+	{
+		getline (file,line);
+		i++;
+	}
+	tsvLen = i;
+	file.close();
+}
+
+void tsv::loadtsv(wxProgressDialog* progDlg)
 {
     // Initialize variables
+    int k = 0;
 	float max = 0, min = 0;
 	bool haveMin = false;
 	string line;
@@ -99,6 +120,9 @@ void tsv::loadtsv()
 			j++;
 		}
 
+		k++;
+		progDlg->Update(0 + (k * (49.9 / tsvLen)));
+
 		// insert line to sdem
 		if (tsvLine.size() > 0)
 			push_back(tsvLine);
@@ -111,4 +135,3 @@ void tsv::loadtsv()
 	tsvMax = max;
 	tsvMin = min;
 }
-

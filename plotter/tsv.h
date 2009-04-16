@@ -12,6 +12,7 @@
 
 #include <list>
 #include <wx/string.h>
+#include <wx/progdlg.h>
 
 class tsv: public std::list< std::list<float> >
 {
@@ -20,11 +21,11 @@ class tsv: public std::list< std::list<float> >
         float getMin();
         float getMax();
         virtual ~tsv();
-        virtual void setFileName(wxString filename);
+        virtual void setFileName(wxString filename, wxProgressDialog *progDlg);
         virtual const char* getFileName();
     private:
-        void loadtsv();
+        void loadtsv(wxProgressDialog *progDlg);
+        void findLength();
 };
 
 #endif
-

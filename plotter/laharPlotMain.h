@@ -11,6 +11,7 @@
 #define LAHARPLOTMAIN_H
 
 #include <wx/progdlg.h>
+#include <wx/string.h>
 
 #include "laharPlotApp.h"
 #include "GUIFrame.h"
@@ -19,6 +20,7 @@
 class laharPlotFrame: public GUIFrame
 {
     public:
+        void SetFile(wxString file);
         laharPlotFrame(wxFrame *frame);
         ~laharPlotFrame();
     private:
