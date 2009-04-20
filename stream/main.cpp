@@ -220,7 +220,7 @@ int main(int argc, char* argv[])
 	//Now do calculations.
 	lg.set(normal) << "\nCalculating...\nFinding flow direction...\n";
 	//make flow direction grid
-	boost::thread_group flowDirCalc;
+	/*boost::thread_group flowDirCalc;
 	for(int thread=0; thread<(threads-1); thread++)
 	{
 		int firstRow = thread*rowsPerThread;
@@ -228,7 +228,7 @@ int main(int argc, char* argv[])
 	}
 	flowDirCalc.add_thread(new boost::thread(flowDirection, (threads-1)*rowsPerThread, Cell::cellsY));
 	flowDirCalc.join_all();
-	if(fileOut)	writeout.add_thread(new boost::thread(writeFlowDir));
+	if(fileOut)	writeout.add_thread(new boost::thread(writeFlowDir));*/
 
 	//make flow total grid
 	lg.set(normal) << "\nFinding flow totals...\n";
@@ -249,6 +249,7 @@ int main(int argc, char* argv[])
 	lg.set(normal) << "Writing output...\n";
 	
 	//write output
+	if(fileOut)	writeout.add_thread(new boost::thread(writeFlowDir));
 	if(fileOut)	writeout.add_thread(new boost::thread(writeFlowTotal));
 	if(cmdOut)	writeout.add_thread(new boost::thread(writeStdOut, iniData));
 	writeout.join_all();
@@ -265,7 +266,7 @@ int main(int argc, char* argv[])
 	return 0;
 }
 
-void flowDirection(int row, int end)
+/*void flowDirection(int row, int end)
 {
 	//We don't deal with cells on the outer boundary because their default
 	//flow direction is outward and that is what we want.
@@ -280,40 +281,40 @@ void flowDirection(int row, int end)
 			linear(dem,row,column).flowDir = greatestSlope(row, column);
 		}
 	}
-}
-
+}*/
+/*
 direction greatestSlope(int row, int column)
 {
 	vector<float> slopes(8,0);
 	//method 1 (rudiger: compare cross slopes)
-	/*slopes[north]		= linear(dem,row+1,column).height	- linear(dem,row-1,column).height;
-	slopes[northeast]	= linear(dem,row+1,column-1).height	- linear(dem,row-1,column+1).height;
-	slopes[east]		= linear(dem,row,column-1).height	- linear(dem,row,column+1).height;
-	slopes[southeast]	= linear(dem,row-1,column-1).height	- linear(dem,row+1,column+1).height;
-	slopes[south]		= -slopes[north];
-	slopes[southwest]	= -slopes[northeast];
-	slopes[west]		= -slopes[east];
-	slopes[northwest]	= -slopes[southeast];*/
+	//slopes[north]		= linear(dem,row+1,column).height	- linear(dem,row-1,column).height;
+	//slopes[northeast]	= linear(dem,row+1,column-1).height	- linear(dem,row-1,column+1).height;
+	//slopes[east]		= linear(dem,row,column-1).height	- linear(dem,row,column+1).height;
+	//slopes[southeast]	= linear(dem,row-1,column-1).height	- linear(dem,row+1,column+1).height;
+	//slopes[south]		= -slopes[north];
+	//slopes[southwest]	= -slopes[northeast];
+	//slopes[west]		= -slopes[east];
+	//slopes[northwest]	= -slopes[southeast];
 	
 	//method 2 (compare radial slopes)
-	/*slopes[north]		= linear(dem,row,column).height	- linear(dem,row-1,column).height;
+	slopes[north]		= linear(dem,row,column).height	- linear(dem,row-1,column).height;
 	slopes[northeast]	= linear(dem,row,column).height	- linear(dem,row-1,column+1).height;
 	slopes[east]		= linear(dem,row,column).height	- linear(dem,row,column+1).height;
 	slopes[southeast]	= linear(dem,row,column).height	- linear(dem,row+1,column+1).height;
 	slopes[south]		= linear(dem,row,column).height - linear(dem,row+1,column).height;
 	slopes[southwest]	= linear(dem,row,column).height - linear(dem,row+1,column-1).height;
 	slopes[west]		= linear(dem,row,column).height - linear(dem,row,column-1).height;
-	slopes[northwest]	= linear(dem,row,column).height - linear(dem,row-1,column-1).height;*/
+	slopes[northwest]	= linear(dem,row,column).height - linear(dem,row-1,column-1).height;
 	
 	//method 3 (null)
-	/*slopes[north]		= 0;
-	slopes[northeast]	= 0;
-	slopes[east]		= 0;
-	slopes[southeast]	= 0;
-	slopes[south]		= 1;
-	slopes[southwest]	= 0;
-	slopes[west]		= 0;
-	slopes[northwest]	= 0;*/
+	//slopes[north]		= 0;
+	//slopes[northeast]	= 0;
+	//slopes[east]		= 0;
+	//slopes[southeast]	= 0;
+	//slopes[south]		= 1;
+	//slopes[southwest]	= 0;
+	//slopes[west]		= 0;
+	//slopes[northwest]	= 0;
 		
 	//method 4 (use lowest elevation)
 	slopes[north]		= -linear(dem,row-1,column	).height;
@@ -332,7 +333,7 @@ direction greatestSlope(int row, int column)
 			max = dir;
 	}
 	return intDirection(max);
-}
+}*/
 
 void linearTo2d(int firstRow, int end)
 {
@@ -397,9 +398,9 @@ void writeFlowDir()
 	{
 		for(int column=0; column<(Cell::cellsX-1); column++)
 		{
-			*flowDir << (int)(linear(dem,row,column).flowDir) << '\t';
+			*flowDir << (int)(linear(dem,row,column).getFlowDir()) << '\t';
 		}
-		*flowDir << (int)(linear(dem,row,Cell::cellsX-1).flowDir) << '\n';
+		*flowDir << (int)(linear(dem,row,Cell::cellsX-1).getFlowDir()) << '\n';
 	}
 	flowDir->close();
 }
@@ -447,9 +448,9 @@ void writeStdOut(Metadata iniData)
 	{
 		for(int column=0; column<(Cell::cellsX-1); column++)
 		{
-			cout << (int)(linear(dem,row,column).flowDir) << '\t';
+			cout << (int)(linear(dem,row,column).getFlowDir()) << '\t';
 		}
-		cout << (int)(linear(dem,row,Cell::cellsX-1).flowDir) << '\n';
+		cout << (int)(linear(dem,row,Cell::cellsX-1).getFlowDir()) << '\n';
 	}
 	cout << '\n';
 	//write Flow Total Grid

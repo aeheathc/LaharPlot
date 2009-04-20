@@ -68,12 +68,14 @@ void linearTo2d(int firstRow, int end);
 	firstRow to (end-1). Usually called multiple times in parallel, on different
 	parts of the DEM.
 */
-void flowDirection(int firstRow, int end);
-direction greatestSlope(int x, int y);
+//void flowDirection(int firstRow, int end);
+//direction greatestSlope(int x, int y);
 
 /*	Creates flow records for the Flow Total Grid in a certain part of the DEM.
 	Usually called multiple times in parallel, on different
 	parts of the DEM.
+	start and end refer to positions in a linear collection of all the
+	EDGE cells of the DEM.
 */
 void flowTrace(unsigned long start, unsigned long end);
 

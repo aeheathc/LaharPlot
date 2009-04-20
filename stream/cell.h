@@ -24,6 +24,7 @@
 
 #include <algorithm>
 #include <iostream>
+#include <set>
 #include <sstream>
 #include <string>
 
@@ -34,6 +35,7 @@ using namespace std;
 class Cell;
 
 enum direction{north, northeast, east, southeast, south, southwest, west, northwest, none};
+enum FlowMethod{cross, direct, dummy, lowest};
 
 direction intDirection(int dirIn);
 
@@ -48,7 +50,6 @@ class Cell
 		
 	float height;		//Elevation in meters
 	int y,x;			//location of this cell within the DEM
-	direction flowDir;	//the direction in which THIS cell flows
 	unsigned long long flowTotal;
 
 	Cell(float elevation, int y, int x);
@@ -58,13 +59,24 @@ class Cell
 	
 	bool getFlowTotalReady() const;
 	unsigned long long getFlowTotal();
+	void setFlowDir(direction dir);
+	direction getFlowDir();
 
-	Cell& operator=(const Cell& src);
+	//fill out the basic data for this cell
 	void fill(float elevation, int y, int x, direction dir = none);
+	/* Calculate and store the flow total for this cell. Cascades out to all
+		cells that flow into this one.
+	*/
 	void accumulate();
+	/* Get all *possible* flow directions for this cell. If a single one has
+		already been chosen, the set only contains that direction.
+	*/
+	const set<direction>& flowDirs(FlowMethod method = cross);
 	
 	private:
 	bool flowTotalReady;
+	set<direction> flowDirSet;	//all possible directions where this cell can flow
+	direction flowDir;	//the direction in which THIS cell flows
 };
 
 #endif

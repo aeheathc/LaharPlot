@@ -21,15 +21,15 @@
 
 // TODO: use chained constructors when that functionality comes in C++09
 Cell::Cell(float elevation, int yIn, int xIn)
-	: height(elevation), y(yIn), x(xIn), flowDir(none), flowTotal(0), flowTotalReady(false)
+	: height(elevation), y(yIn), x(xIn), flowTotal(0), flowTotalReady(false), flowDir(none)
 {}
 
 Cell::Cell(float elevation, int yIn, int xIn, direction dir)
-	: height(elevation), y(yIn), x(xIn), flowDir(dir), flowTotal(0), flowTotalReady(false)
+	: height(elevation), y(yIn), x(xIn), flowTotal(0), flowTotalReady(false), flowDir(dir)
 {}
 
 Cell::Cell()
-	: height(-10000), y(-1), x(-1), flowDir(none), flowTotal(0), flowTotalReady(false)
+	: height(-10000), y(-1), x(-1), flowTotal(0), flowTotalReady(false), flowDir(none)
 {}
 
 Cell::~Cell()
@@ -41,17 +41,8 @@ void Cell::fill(float elevation, int y, int x, direction dir)
 	this->y = y;
 	this->x = x;
 	flowDir = dir;
-}
-
-Cell& Cell::operator=(const Cell& src)
-{
-	height = src.height;
-	x = src.x;
-	y = src.y;
-	flowDir = src.flowDir;
-	flowTotal = src.flowTotal;
-	flowTotalReady = src.getFlowTotalReady();
-	return *this;
+	//if a direction is specified, prevent it from being recalculated later
+	if(dir != none) flowDirSet.insert(dir);
 }
 
 bool Cell::getFlowTotalReady() const {return flowTotalReady;}
@@ -66,6 +57,15 @@ unsigned long long Cell::getFlowTotal()
 	return flowTotal;
 }
 
+void Cell::setFlowDir(direction dir)
+{
+	flowDir = dir;
+	flowDirSet.clear();
+	flowDirSet.insert(dir);
+}
+
+direction Cell::getFlowDir() {return flowDir;}
+
 void Cell::accumulate()
 {
 	ostringstream oss;
@@ -76,8 +76,9 @@ void Cell::accumulate()
 	if(y > 0)
 	{
 		adj = &linear(dem,y-1,x);	//north
-		if(adj->flowDir == south)
+		if(adj->flowDirs().find(south) != adj->flowDirs().end())
 		{
+			adj->setFlowDir(south);
 			oss.str("");
 			oss << "Going north to " << adj->y << ',' << adj->x << '\n';
 			lg.write(debug, oss.str());
@@ -87,8 +88,9 @@ void Cell::accumulate()
 	if(y > 0 && x < (cellsX-1))
 	{
 		adj = &linear(dem,y-1,x+1);	//northeast
-		if(adj->flowDir == southwest)
+		if(adj->flowDirs().find(southwest) != adj->flowDirs().end())
 		{
+			adj->setFlowDir(southwest);
 			oss.str("");
 			oss << "Going northeast to " << adj->y << ',' << adj->x << '\n';
 			lg.write(debug, oss.str());
@@ -98,8 +100,9 @@ void Cell::accumulate()
 	if(x < (cellsX-1))
 	{
 		adj = &linear(dem,y,x+1);	//east
-		if(adj->flowDir == west)
+		if(adj->flowDirs().find(west) != adj->flowDirs().end())
 		{
+			adj->setFlowDir(west);
 			oss.str("");
 			oss << "Going east to " << adj->y << ',' << adj->x << '\n';
 			lg.write(debug, oss.str());
@@ -109,8 +112,9 @@ void Cell::accumulate()
 	if(x < (cellsX-1) && y < (cellsY-1))
 	{
 		adj = &linear(dem,y+1,x+1);	//southeast
-		if(adj->flowDir == northwest)
+		if(adj->flowDirs().find(northwest) != adj->flowDirs().end())
 		{
+			adj->setFlowDir(northwest);
 			oss.str("");
 			oss << "Going southeast to " << adj->y << ',' << adj->x << '\n';
 			lg.write(debug, oss.str());
@@ -120,8 +124,9 @@ void Cell::accumulate()
 	if(y < (cellsY-1))
 	{
 		adj = &linear(dem,y+1,x);	//south
-		if(adj->flowDir == north)
+		if(adj->flowDirs().find(north) != adj->flowDirs().end())
 		{
+			adj->setFlowDir(north);
 			oss.str("");
 			oss << "Going south to " << adj->y << ',' << adj->x << '\n';
 			lg.write(debug, oss.str());
@@ -131,8 +136,9 @@ void Cell::accumulate()
 	if(x>0 && y < (cellsY-1))
 	{
 		adj = &linear(dem,y+1,x-1);	//southwest
-		if(adj->flowDir == northeast)
+		if(adj->flowDirs().find(northeast) != adj->flowDirs().end())
 		{
+			adj->setFlowDir(northeast);
 			oss.str("");
 			oss << "Going southwest to " << adj->y << ',' << adj->x << '\n';
 			lg.write(debug, oss.str());
@@ -142,8 +148,9 @@ void Cell::accumulate()
 	if(x>0)
 	{
 		adj = &linear(dem,y,x-1);	//west
-		if(adj->flowDir == east)
+		if(adj->flowDirs().find(east) != adj->flowDirs().end())
 		{
+			adj->setFlowDir(east);
 			oss.str("");
 			oss << "Going west to " << adj->y << ',' << adj->x << '\n';
 			lg.write(debug, oss.str());
@@ -153,8 +160,9 @@ void Cell::accumulate()
 	if(y>0 && x>0)
 	{
 		adj = &linear(dem,y-1,x-1);	//northwest
-		if(adj->flowDir == southeast)
+		if(adj->flowDirs().find(southeast) != adj->flowDirs().end())
 		{
+			adj->setFlowDir(southeast);
 			oss.str("");
 			oss << "Going northwest to " << adj->y << ',' << adj->x << '\n';
 			lg.write(debug, oss.str());
@@ -164,6 +172,73 @@ void Cell::accumulate()
 	oss.str("");
 	oss << "Done calling accumulate on " << y << ',' << x << '\n';
 	lg.write(debug, oss.str());
+}
+
+const set<direction>& Cell::flowDirs(FlowMethod method)
+{
+	//if this was already calculated, don't do it again
+	if(flowDirSet.size()) return flowDirSet;
+	
+	vector<float> slopes(8,0);
+	switch(method)
+	{
+		//method 1 (rudiger: compare cross slopes)
+		case cross:
+		slopes[north]		= linear(dem,y+1,x).height	- linear(dem,y-1,x).height;
+		slopes[northeast]	= linear(dem,y+1,x-1).height- linear(dem,y-1,x+1).height;
+		slopes[east]		= linear(dem,y,x-1).height	- linear(dem,y,x+1).height;
+		slopes[southeast]	= linear(dem,y-1,x-1).height- linear(dem,y+1,x+1).height;
+		slopes[south]		= -slopes[north];
+		slopes[southwest]	= -slopes[northeast];
+		slopes[west]		= -slopes[east];
+		slopes[northwest]	= -slopes[southeast];
+		break;
+	
+		//method 2 (compare radial slopes)
+		case direct:
+		slopes[north]		= linear(dem,y,x).height - linear(dem,y-1,x).height;
+		slopes[northeast]	= linear(dem,y,x).height - linear(dem,y-1,x+1).height;
+		slopes[east]		= linear(dem,y,x).height - linear(dem,y,x+1).height;
+		slopes[southeast]	= linear(dem,y,x).height - linear(dem,y+1,x+1).height;
+		slopes[south]		= linear(dem,y,x).height - linear(dem,y+1,x).height;
+		slopes[southwest]	= linear(dem,y,x).height - linear(dem,y+1,x-1).height;
+		slopes[west]		= linear(dem,y,x).height - linear(dem,y,x-1).height;
+		slopes[northwest]	= linear(dem,y,x).height - linear(dem,y-1,x-1).height;
+		break;
+	
+		//method 3 (null)
+		case dummy:
+		slopes[north]		= 0;
+		slopes[northeast]	= 0;
+		slopes[east]		= 0;
+		slopes[southeast]	= 0;
+		slopes[south]		= 1;
+		slopes[southwest]	= 0;
+		slopes[west]		= 0;
+		slopes[northwest]	= 0;
+		break;
+		
+		//method 4 (use lowest elevation)
+		case lowest:
+		slopes[north]		= -linear(dem,y-1,x	 ).height;
+		slopes[northeast]	= -linear(dem,y-1,x+1).height;
+		slopes[east]		= -linear(dem,y  ,x+1).height;
+		slopes[southeast]	= -linear(dem,y+1,x+1).height;
+		slopes[south]		= -linear(dem,y+1,x	 ).height;
+		slopes[southwest]	= -linear(dem,y+1,x-1).height;
+		slopes[west]		= -linear(dem,y  ,x-1).height;
+		slopes[northwest]	= -linear(dem,y-1,x-1).height;	
+		break;
+	}
+	
+	float max = *max_element(slopes.begin(),slopes.end());
+	for(int dir=north; dir<none; dir++)
+	{
+		if(slopes[dir] == max)
+			flowDirSet.insert(intDirection(dir));
+	}
+	if(!flowDirSet.size()) lg.write(normal, "flowDirs tried to return an empty set, oops\n");
+	return flowDirSet;
 }
 
 int Cell::cellsY;
