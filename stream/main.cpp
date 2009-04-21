@@ -190,7 +190,7 @@ int main(int argc, char* argv[])
 		
 	//Fill in the sinkholes!
 	lg.set(normal) << "Filling sinkholes...\n";
-	FillSinks filler(pafScanline, Cell::cellsY, Cell::cellsX, 0.00000001);
+	FillSinks filler(pafScanline, Cell::cellsY, Cell::cellsX, 0.00001);
 	filler.fill();
 	
 	//We have the data from the file, now we make the data 2-dimensional for easier reading.

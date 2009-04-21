@@ -22,18 +22,26 @@
 // TODO: use chained constructors when that functionality comes in C++09
 Cell::Cell(float elevation, int yIn, int xIn)
 	: height(elevation), y(yIn), x(xIn), flowTotal(0), flowTotalReady(false), flowDir(none)
-{}
+{
+	flowDirSet = new set<direction>();
+}
 
 Cell::Cell(float elevation, int yIn, int xIn, direction dir)
 	: height(elevation), y(yIn), x(xIn), flowTotal(0), flowTotalReady(false), flowDir(dir)
-{}
+{
+	flowDirSet = new set<direction>();
+}
 
 Cell::Cell()
 	: height(-10000), y(-1), x(-1), flowTotal(0), flowTotalReady(false), flowDir(none)
-{}
+{
+	flowDirSet = new set<direction>();
+}
 
 Cell::~Cell()
-{}
+{
+	delete flowDirSet;
+}
 
 void Cell::fill(float elevation, int y, int x, direction dir)
 {
@@ -42,7 +50,7 @@ void Cell::fill(float elevation, int y, int x, direction dir)
 	this->x = x;
 	flowDir = dir;
 	//if a direction is specified, prevent it from being recalculated later
-	if(dir != none) flowDirSet.insert(dir);
+	if(dir != none) flowDirSet->insert(dir);
 }
 
 bool Cell::getFlowTotalReady() const {return flowTotalReady;}
@@ -60,16 +68,19 @@ unsigned long long Cell::getFlowTotal()
 void Cell::setFlowDir(direction dir)
 {
 	flowDir = dir;
-	flowDirSet.clear();
-	flowDirSet.insert(dir);
+	flowDirSet->clear();
+	flowDirSet->insert(dir);
 }
 
 direction Cell::getFlowDir() {return flowDir;}
 
 void Cell::accumulate()
 {
+	boost::mutex::scoped_lock lock(accumulate_mutex);
+	if(flowTotalReady) return;
+	
 	ostringstream oss;
-	oss << "Calling accumulate on " << y << ',' << x << '\n';  //debug
+	oss << "Calling   accumulate on " << y << ',' << x << ':' << height << '\n';  //debug
 	lg.write(debug, oss.str());
 	
 	Cell *adj = NULL;							//an adjacent cell
@@ -170,14 +181,16 @@ void Cell::accumulate()
 		}
 	}
 	oss.str("");
-	oss << "Done calling accumulate on " << y << ',' << x << '\n';
+	oss << "Done with accumulate on " << y << ',' << x << ':' << height << '\n';
 	lg.write(debug, oss.str());
+	flowTotalReady = true;
 }
 
 const set<direction>& Cell::flowDirs(FlowMethod method)
 {
+	boost::mutex::scoped_lock lock(flowDirs_mutex);
 	//if this was already calculated, don't do it again
-	if(flowDirSet.size()) return flowDirSet;
+	if(flowDirSet->size()) return *flowDirSet;
 	
 	vector<float> slopes(8,0);
 	switch(method)
@@ -235,10 +248,10 @@ const set<direction>& Cell::flowDirs(FlowMethod method)
 	for(int dir=north; dir<none; dir++)
 	{
 		if(slopes[dir] == max)
-			flowDirSet.insert(intDirection(dir));
+			flowDirSet->insert(intDirection(dir));
 	}
-	if(!flowDirSet.size()) lg.write(normal, "flowDirs tried to return an empty set, oops\n");
-	return flowDirSet;
+	if(!flowDirSet->size()) lg.write(normal, "flowDirs tried to return an empty set, oops\n");
+	return *flowDirSet;
 }
 
 int Cell::cellsY;

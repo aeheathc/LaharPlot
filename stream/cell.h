@@ -75,8 +75,9 @@ class Cell
 	
 	private:
 	bool flowTotalReady;
-	set<direction> flowDirSet;	//all possible directions where this cell can flow
+	set<direction>* flowDirSet;	//all possible directions where this cell can flow
 	direction flowDir;	//the direction in which THIS cell flows
+	boost::mutex flowDirs_mutex, accumulate_mutex;
 };
 
 #endif
