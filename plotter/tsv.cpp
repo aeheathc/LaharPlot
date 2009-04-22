@@ -40,13 +40,13 @@ float tsv::getMax()
 	return tsvMax;
 }
 
-void tsv::setFileName(wxString filename, wxProgressDialog* progDlg)
+void tsv::setFileName(wxString filename, wxProgressDialog* progDlg, float start, float end)
 {
     tsvFileName = filename.mb_str(wxConvUTF8);
-    progDlg->Update(0,_("Finding Length"));
+    progDlg->Update(start,_("Finding Length"));
     findLength();
-    progDlg->Update(0,_("Parsing File"));
-    loadtsv(progDlg);
+    progDlg->Update(start,_("Parsing ") + filename);
+    loadtsv(progDlg, start, end);
 }
 
 const char* tsv::getFileName()
@@ -68,7 +68,7 @@ void tsv::findLength()
 	file.close();
 }
 
-void tsv::loadtsv(wxProgressDialog* progDlg)
+void tsv::loadtsv(wxProgressDialog* progDlg, float start, float end)
 {
     // Initialize variables
     int k = 0;
@@ -121,7 +121,7 @@ void tsv::loadtsv(wxProgressDialog* progDlg)
 		}
 
 		k++;
-		progDlg->Update(0 + (k * (49.9 / tsvLen)));
+		progDlg->Update(start + (k * ((end - start) / tsvLen)));
 
 		// insert line to sdem
 		if (tsvLine.size() > 0)

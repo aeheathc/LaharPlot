@@ -21,10 +21,10 @@ class tsv: public std::list< std::list<float> >
         float getMin();
         float getMax();
         virtual ~tsv();
-        virtual void setFileName(wxString filename, wxProgressDialog *progDlg);
+        virtual void setFileName(wxString filename, wxProgressDialog *progDlg, float start, float end);
         virtual const char* getFileName();
     private:
-        void loadtsv(wxProgressDialog *progDlg);
+        void loadtsv(wxProgressDialog *progDlg, float start, float end);
         void findLength();
 };
 

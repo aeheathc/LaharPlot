@@ -140,7 +140,7 @@
                         <property name="help">Load simple DEM file</property>
                         <property name="id">idLoadSdem</property>
                         <property name="kind">wxITEM_NORMAL</property>
-                        <property name="label">Load SDEM</property>
+                        <property name="label">Load SDEM / Flow Totals</property>
                         <property name="name">menuFileLoadSdem</property>
                         <property name="permission">none</property>
                         <property name="shortcut"></property>
@@ -380,7 +380,7 @@
                                 <property name="label"></property>
                                 <property name="maximum_size"></property>
                                 <property name="minimum_size"></property>
-                                <property name="name">m_radioBtn3</property>
+                                <property name="name">streamSliderRadio</property>
                                 <property name="permission">protected</property>
                                 <property name="pos"></property>
                                 <property name="size"></property>
@@ -436,7 +436,7 @@
                                 <property name="maximum_size"></property>
                                 <property name="minValue">0</property>
                                 <property name="minimum_size"></property>
-                                <property name="name">streamThresh</property>
+                                <property name="name">streamSlider</property>
                                 <property name="permission">protected</property>
                                 <property name="pos"></property>
                                 <property name="size"></property>
@@ -510,7 +510,7 @@
                                 <property name="label"></property>
                                 <property name="maximum_size"></property>
                                 <property name="minimum_size"></property>
-                                <property name="name">m_radioBtn4</property>
+                                <property name="name">streamBoxRadio</property>
                                 <property name="permission">protected</property>
                                 <property name="pos"></property>
                                 <property name="size"></property>
@@ -565,14 +565,14 @@
                                 <property name="maximum_size"></property>
                                 <property name="maxlength">6</property>
                                 <property name="minimum_size"></property>
-                                <property name="name">m_textCtrl3</property>
+                                <property name="name">streamBox</property>
                                 <property name="permission">protected</property>
                                 <property name="pos"></property>
                                 <property name="size">48,-1</property>
-                                <property name="style"></property>
+                                <property name="style">wxTE_PROCESS_ENTER</property>
                                 <property name="subclass"></property>
                                 <property name="tooltip"></property>
-                                <property name="value"></property>
+                                <property name="value">1000</property>
                                 <property name="window_extra_style"></property>
                                 <property name="window_name"></property>
                                 <property name="window_style"></property>
@@ -599,7 +599,7 @@
                                 <event name="OnSetFocus"></event>
                                 <event name="OnSize"></event>
                                 <event name="OnText"></event>
-                                <event name="OnTextEnter"></event>
+                                <event name="OnTextEnter">OnTextEnter</event>
                                 <event name="OnTextMaxLen"></event>
                                 <event name="OnTextURL"></event>
                                 <event name="OnUpdateUI"></event>

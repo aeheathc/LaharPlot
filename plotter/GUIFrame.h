@@ -53,10 +53,10 @@ class GUIFrame : public wxFrame
 		wxStatusBar* statusBar;
 		wxScrolledWindow* SDEMScroll;
 		wxCheckBox* showStreams;
-		wxRadioButton* m_radioBtn3;
-		wxSlider* streamThresh;
-		wxRadioButton* m_radioBtn4;
-		wxTextCtrl* m_textCtrl3;
+		wxRadioButton* streamSliderRadio;
+		wxSlider* streamSlider;
+		wxRadioButton* streamBoxRadio;
+		wxTextCtrl* streamBox;
 		
 		// Virtual event handlers, overide them in your derived class
 		virtual void OnClose( wxCloseEvent& event ){ event.Skip(); }
@@ -67,6 +67,7 @@ class GUIFrame : public wxFrame
 		virtual void OnScrollwheel( wxMouseEvent& event ){ event.Skip(); }
 		virtual void OnPaint( wxPaintEvent& event ){ event.Skip(); }
 		virtual void OnShowStreams( wxCommandEvent& event ){ event.Skip(); }
+		virtual void OnTextEnter( wxCommandEvent& event ){ event.Skip(); }
 		
 	
 	public:

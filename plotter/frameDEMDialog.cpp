@@ -73,45 +73,47 @@ void frameDEMDialog::OnConvert( wxCommandEvent& event )
 		wxProgressDialog streamPBar (_("Running 'stream'"), _("Filling Sinkholes... (May take a while.)"), 100, this, wxPD_APP_MODAL | wxPD_AUTO_HIDE);
 		streamPBar.SetSize(300, 120);
 		wxChar charIn;
-		long cells;
+		long xsize, ysize, ft;
 
 		if (streamIn != NULL) {
 			int eq = 0, i = 0, j = 0, k = 0;
 			while (!streamIn->Eof())
 			{
 				charIn = streamIn->GetC();
-				if (charIn == '=')
+				/*if (charIn == '=')
 				{
 					eq++;
-					if (eq == 3)
+					if (eq == 1 || eq == 2)
 					{
 						wxString num = _("");
 						charIn = streamIn->GetC();
-						while (charIn != '\n')
+						while (charIn != ',')
 						{
 							num.append(charIn);
 							charIn = streamIn->GetC();
 						}
-						num.ToLong(&cells);
+						if (eq == 1) num.ToLong(&xsize);
+						else
+						{
+							num.ToLong(&ysize);
+							ft = 2 * (ysize + xsize - 2);
+						}
 					}
-				}
+				}*/
 				if (charIn == '-')
 				{
 					i++;
-					if (i % 1000 == 0)
-						streamPBar.Update(15.0 * ((1.0 * i) / cells), _("Building DEM..."));
+					if (i == 1) streamPBar.Update(0, _("Building DEM..."));
 				}
 				if (charIn == '.')
 				{
 					j++;
-					if (j % 1000 == 0)
-						streamPBar.Update(15 + (39 * ((1.0 * j) / cells)), _("Finding Flow Direction..."));
+					if (j == 1) streamPBar.Update(20, _("Finding Flow Direction..."));
 				}
 				if (charIn == '#')
 				{
 					k++;
-					if (k % 1000 == 0)
-						streamPBar.Update(90, _("Finding Flow Totals..."));
+					if (k == 1) streamPBar.Update(50,_("Finding Flow Totals..."));
 				}
 			}
 		}
@@ -119,7 +121,7 @@ void frameDEMDialog::OnConvert( wxCommandEvent& event )
 		delete process;
 		streamPBar.Update(100);
 
-		par->SetFile(otbValue.append(_("-sdem.tsv")));
+		//par->SetFile(otbValue);
 
 		EndDialog(1);
 	}

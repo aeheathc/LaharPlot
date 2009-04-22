@@ -30,7 +30,7 @@ GUIFrame::GUIFrame( wxWindow* parent, wxWindowID id, const wxString& title, cons
 	fileMenu->Append( menuFileConvertDEM );
 	
 	wxMenuItem* menuFileLoadSdem;
-	menuFileLoadSdem = new wxMenuItem( fileMenu, idLoadSdem, wxString( wxT("Load SDEM") ) , wxT("Load simple DEM file"), wxITEM_NORMAL );
+	menuFileLoadSdem = new wxMenuItem( fileMenu, idLoadSdem, wxString( wxT("Load SDEM / Flow Totals") ) , wxT("Load simple DEM file"), wxITEM_NORMAL );
 	fileMenu->Append( menuFileLoadSdem );
 	
 	wxMenuItem* menuFileQuit;
@@ -70,19 +70,19 @@ GUIFrame::GUIFrame( wxWindow* parent, wxWindowID id, const wxString& title, cons
 	
 	gbSizer2->Add( showStreams, wxGBPosition( 0, 0 ), wxGBSpan( 1, 1 ), wxALIGN_CENTER_VERTICAL|wxALL, 5 );
 	
-	m_radioBtn3 = new wxRadioButton( this, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxRB_GROUP );
-	gbSizer2->Add( m_radioBtn3, wxGBPosition( 0, 1 ), wxGBSpan( 1, 1 ), wxALIGN_CENTER_VERTICAL|wxALL, 5 );
+	streamSliderRadio = new wxRadioButton( this, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxRB_GROUP );
+	gbSizer2->Add( streamSliderRadio, wxGBPosition( 0, 1 ), wxGBSpan( 1, 1 ), wxALIGN_CENTER_VERTICAL|wxALL, 5 );
 	
-	streamThresh = new wxSlider( this, wxID_ANY, 500, 0, 1000, wxDefaultPosition, wxDefaultSize, wxSL_HORIZONTAL );
-	gbSizer2->Add( streamThresh, wxGBPosition( 0, 2 ), wxGBSpan( 1, 1 ), wxALIGN_CENTER_VERTICAL|wxALL, 0 );
+	streamSlider = new wxSlider( this, wxID_ANY, 500, 0, 1000, wxDefaultPosition, wxDefaultSize, wxSL_HORIZONTAL );
+	gbSizer2->Add( streamSlider, wxGBPosition( 0, 2 ), wxGBSpan( 1, 1 ), wxALIGN_CENTER_VERTICAL|wxALL, 0 );
 	
-	m_radioBtn4 = new wxRadioButton( this, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0 );
-	m_radioBtn4->SetValue( true ); 
-	gbSizer2->Add( m_radioBtn4, wxGBPosition( 0, 3 ), wxGBSpan( 1, 1 ), wxALIGN_CENTER_VERTICAL|wxALL, 5 );
+	streamBoxRadio = new wxRadioButton( this, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0 );
+	streamBoxRadio->SetValue( true ); 
+	gbSizer2->Add( streamBoxRadio, wxGBPosition( 0, 3 ), wxGBSpan( 1, 1 ), wxALIGN_CENTER_VERTICAL|wxALL, 5 );
 	
-	m_textCtrl3 = new wxTextCtrl( this, wxID_ANY, wxEmptyString, wxDefaultPosition, wxSize( 48,-1 ), 0 );
-	m_textCtrl3->SetMaxLength( 6 ); 
-	gbSizer2->Add( m_textCtrl3, wxGBPosition( 0, 4 ), wxGBSpan( 1, 1 ), wxALIGN_CENTER_VERTICAL|wxALL, 5 );
+	streamBox = new wxTextCtrl( this, wxID_ANY, wxT("1000"), wxDefaultPosition, wxSize( 48,-1 ), wxTE_PROCESS_ENTER );
+	streamBox->SetMaxLength( 6 ); 
+	gbSizer2->Add( streamBox, wxGBPosition( 0, 4 ), wxGBSpan( 1, 1 ), wxALIGN_CENTER_VERTICAL|wxALL, 5 );
 	
 	fgSizer2->Add( gbSizer2, 1, wxEXPAND, 5 );
 	
@@ -98,6 +98,7 @@ GUIFrame::GUIFrame( wxWindow* parent, wxWindowID id, const wxString& title, cons
 	SDEMScroll->Connect( wxEVT_MOUSEWHEEL, wxMouseEventHandler( GUIFrame::OnScrollwheel ), NULL, this );
 	SDEMScroll->Connect( wxEVT_PAINT, wxPaintEventHandler( GUIFrame::OnPaint ), NULL, this );
 	showStreams->Connect( wxEVT_COMMAND_CHECKBOX_CLICKED, wxCommandEventHandler( GUIFrame::OnShowStreams ), NULL, this );
+	streamBox->Connect( wxEVT_COMMAND_TEXT_ENTER, wxCommandEventHandler( GUIFrame::OnTextEnter ), NULL, this );
 }
 
 GUIFrame::~GUIFrame()
@@ -111,6 +112,7 @@ GUIFrame::~GUIFrame()
 	SDEMScroll->Disconnect( wxEVT_MOUSEWHEEL, wxMouseEventHandler( GUIFrame::OnScrollwheel ), NULL, this );
 	SDEMScroll->Disconnect( wxEVT_PAINT, wxPaintEventHandler( GUIFrame::OnPaint ), NULL, this );
 	showStreams->Disconnect( wxEVT_COMMAND_CHECKBOX_CLICKED, wxCommandEventHandler( GUIFrame::OnShowStreams ), NULL, this );
+	streamBox->Disconnect( wxEVT_COMMAND_TEXT_ENTER, wxCommandEventHandler( GUIFrame::OnTextEnter ), NULL, this );
 }
 
 DEMDialog::DEMDialog( wxWindow* parent, wxWindowID id, const wxString& title, const wxPoint& pos, const wxSize& size, long style ) : wxDialog( parent, id, title, pos, size, style )
