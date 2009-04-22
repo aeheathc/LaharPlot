@@ -71,7 +71,7 @@ class Cell
 	/* Get all *possible* flow directions for this cell. If a single one has
 		already been chosen, the set only contains that direction.
 	*/
-	const set<direction>& flowDirs(FlowMethod method = cross);
+	const set<direction>& flowDirs(int radius = 1, FlowMethod method = cross);
 	
 	private:
 	bool flowTotalReady;

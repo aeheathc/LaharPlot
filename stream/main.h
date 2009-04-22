@@ -64,13 +64,6 @@ int main(int argc, char* argv[]);
 // Fills the DEM matrix using data provided in linear form.
 void linearTo2d(int firstRow, int end);
 
-/*	Updates the DEM with correct flow direction information in rows
-	firstRow to (end-1). Usually called multiple times in parallel, on different
-	parts of the DEM.
-*/
-//void flowDirection(int firstRow, int end);
-//direction greatestSlope(int x, int y);
-
 /*	Creates flow records for the Flow Total Grid in a certain part of the DEM.
 	Usually called multiple times in parallel, on different
 	parts of the DEM.

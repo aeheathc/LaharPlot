@@ -42,7 +42,14 @@ void FillSinks::fill()
 	linear(pW,0,0,cellsX);
 
 	for(i=0; i<8; i++)
-		epsilon[i] = minslope;
+	{
+		//diagonal cells are slightly more distant than N,S,E,W neighbors, so
+		//an equal slope gives a greater elevation difference.
+		if(i%2)
+			epsilon[i] = minslope * 1.41421;
+		else
+			epsilon[i] = minslope;
+	}
 
 	R0[0] = 0; R0[1] = cellsY-1;	R0[2] = 0;			R0[3] = cellsY-1;	R0[4] = 0;			R0[5] = cellsY-1;	R0[6] = 0; R0[7] = cellsY-1;
 	C0[0] = 0; C0[1] = cellsX-1;	C0[2] = cellsX-1;	C0[3] = 0;			C0[4] = cellsX-1;	C0[5] = 0;			C0[6] = 0; C0[7] = cellsX-1;

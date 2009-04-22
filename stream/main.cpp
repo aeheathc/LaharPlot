@@ -190,7 +190,7 @@ int main(int argc, char* argv[])
 		
 	//Fill in the sinkholes!
 	lg.set(normal) << "Filling sinkholes...\n";
-	FillSinks filler(pafScanline, Cell::cellsY, Cell::cellsX, 0.00001);
+	FillSinks filler(pafScanline, Cell::cellsY, Cell::cellsX, 0.00/*1*/);
 	filler.fill();
 	
 	//We have the data from the file, now we make the data 2-dimensional for easier reading.
@@ -214,24 +214,13 @@ int main(int argc, char* argv[])
 	demFiller.join_all();	//wait until all the data is in place before doing calcs on it
 	delete[] pafScanline;
 	//Done reading DEM...
-	
 	if(fileOut)	writeout.add_thread(new boost::thread(writeSdem));
 	
 	//Now do calculations.
-	lg.set(normal) << "\nCalculating...\nFinding flow direction...\n";
-	//make flow direction grid
-	/*boost::thread_group flowDirCalc;
-	for(int thread=0; thread<(threads-1); thread++)
-	{
-		int firstRow = thread*rowsPerThread;
-		flowDirCalc.add_thread(new boost::thread(flowDirection, firstRow, firstRow+rowsPerThread));
-	}
-	flowDirCalc.add_thread(new boost::thread(flowDirection, (threads-1)*rowsPerThread, Cell::cellsY));
-	flowDirCalc.join_all();
-	if(fileOut)	writeout.add_thread(new boost::thread(writeFlowDir));*/
+	lg.set(normal) << "\nCalculating...\n";
 
 	//make flow total grid
-	lg.set(normal) << "\nFinding flow totals...\n";
+	lg.set(normal) << "\nFinding streams...\n";
 	boost::thread_group flowTotalCalc;
 	const unsigned long edgeCells = (2*Cell::cellsX + 2*Cell::cellsY - 4);
 	const unsigned long cellsPerThread = edgeCells / threads;
@@ -265,75 +254,6 @@ int main(int argc, char* argv[])
 	if(sendEOF) cout << EOF;
 	return 0;
 }
-
-/*void flowDirection(int row, int end)
-{
-	//We don't deal with cells on the outer boundary because their default
-	//flow direction is outward and that is what we want.
-	if(!row) row++;
-	if(end == Cell::cellsY) end--;
-	
-	for(;row < end; row++)
-	{
-		lg.write(progress, '.');
-		for(int column = 1; column < (Cell::cellsX-1); column++)
-		{
-			linear(dem,row,column).flowDir = greatestSlope(row, column);
-		}
-	}
-}*/
-/*
-direction greatestSlope(int row, int column)
-{
-	vector<float> slopes(8,0);
-	//method 1 (rudiger: compare cross slopes)
-	//slopes[north]		= linear(dem,row+1,column).height	- linear(dem,row-1,column).height;
-	//slopes[northeast]	= linear(dem,row+1,column-1).height	- linear(dem,row-1,column+1).height;
-	//slopes[east]		= linear(dem,row,column-1).height	- linear(dem,row,column+1).height;
-	//slopes[southeast]	= linear(dem,row-1,column-1).height	- linear(dem,row+1,column+1).height;
-	//slopes[south]		= -slopes[north];
-	//slopes[southwest]	= -slopes[northeast];
-	//slopes[west]		= -slopes[east];
-	//slopes[northwest]	= -slopes[southeast];
-	
-	//method 2 (compare radial slopes)
-	slopes[north]		= linear(dem,row,column).height	- linear(dem,row-1,column).height;
-	slopes[northeast]	= linear(dem,row,column).height	- linear(dem,row-1,column+1).height;
-	slopes[east]		= linear(dem,row,column).height	- linear(dem,row,column+1).height;
-	slopes[southeast]	= linear(dem,row,column).height	- linear(dem,row+1,column+1).height;
-	slopes[south]		= linear(dem,row,column).height - linear(dem,row+1,column).height;
-	slopes[southwest]	= linear(dem,row,column).height - linear(dem,row+1,column-1).height;
-	slopes[west]		= linear(dem,row,column).height - linear(dem,row,column-1).height;
-	slopes[northwest]	= linear(dem,row,column).height - linear(dem,row-1,column-1).height;
-	
-	//method 3 (null)
-	//slopes[north]		= 0;
-	//slopes[northeast]	= 0;
-	//slopes[east]		= 0;
-	//slopes[southeast]	= 0;
-	//slopes[south]		= 1;
-	//slopes[southwest]	= 0;
-	//slopes[west]		= 0;
-	//slopes[northwest]	= 0;
-		
-	//method 4 (use lowest elevation)
-	slopes[north]		= -linear(dem,row-1,column	).height;
-	slopes[northeast]	= -linear(dem,row-1,column+1).height;
-	slopes[east]		= -linear(dem,row,	column+1).height;
-	slopes[southeast]	= -linear(dem,row+1,column+1).height;
-	slopes[south]		= -linear(dem,row+1,column	).height;
-	slopes[southwest]	= -linear(dem,row+1,column-1).height;
-	slopes[west]		= -linear(dem,row,	column-1).height;
-	slopes[northwest]	= -linear(dem,row-1,column-1).height;	
-	
-	int max=north;
-	for(int dir=northeast; dir < none; dir++)
-	{
-		if(slopes[dir] > slopes[max])
-			max = dir;
-	}
-	return intDirection(max);
-}*/
 
 void linearTo2d(int firstRow, int end)
 {
