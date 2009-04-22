@@ -24,6 +24,8 @@ Cell::Cell(float elevation, int yIn, int xIn)
 	: height(elevation), y(yIn), x(xIn), flowTotal(0), flowTotalReady(false), flowDir(none)
 {
 	flowDirSet = new set<direction>();
+	flowTotalReady = false;
+	accumulated = false;
 }
 
 Cell::Cell(float elevation, int yIn, int xIn, direction dir)
@@ -31,12 +33,16 @@ Cell::Cell(float elevation, int yIn, int xIn, direction dir)
 {
 	flowDirSet = new set<direction>();
 	flowDirSet->insert(dir);
+	flowTotalReady = false;
+	accumulated = false;
 }
 
 Cell::Cell()
 	: height(-10000), y(-1), x(-1), flowTotal(0), flowTotalReady(false), flowDir(none)
 {
 	flowDirSet = new set<direction>();
+	flowTotalReady = false;
+	accumulated = false;
 }
 
 Cell::~Cell()
@@ -77,20 +83,25 @@ direction Cell::getFlowDir() {return flowDir;}
 
 void Cell::accumulate()
 {
+	ostringstream oss;
+	oss << "Calling   accumulate on " << y << ',' << x << ':' << height <<
+		"\n\t" << "where flowTotalReady=" << (flowTotalReady?"true":"false")
+		<< '\n';
+	lg.write(debug, oss.str());
+	
 	if(flowTotalReady) return;
 	
 	{
-		boost::mutex::scoped_lock lock(accumulate_mutex);
-		static bool called = false;
-		if(called) return;
-		called = true;
+		boost::mutex::scoped_lock lock(accumulate_mutex);	
+		if(accumulated) return;
+		accumulated = true;
 	}
 	
-	ostringstream oss;
-	oss << "Calling   accumulate on " << y << ',' << x << ':' << height << '\n';
+	oss.str("");
+	oss << "Doing full   accumulate " << y << ',' << x << ':' << height << '\n';
 	lg.write(debug, oss.str());
-	
-	Cell *adj = NULL;							//an adjacent cell
+
+	Cell *adj = NULL;				//an adjacent cell
 	if(y > 0)
 	{
 		adj = &linear(dem,y-1,x);	//north
@@ -142,6 +153,10 @@ void Cell::accumulate()
 	if(y < (cellsY-1))
 	{
 		adj = &linear(dem,y+1,x);	//south
+		oss.str("");
+		oss << "Flowdirsfindnorth = " << *(adj->flowDirs().find(north)) << ','
+			<< " flowdirsend = " << *(adj->flowDirs().end()) << '\n';
+		lg.write(debug, oss.str());
 		if(adj->flowDirs().find(north) != adj->flowDirs().end())
 		{
 			adj->setFlowDir(north);
