@@ -153,10 +153,6 @@ void Cell::accumulate()
 	if(y < (cellsY-1))
 	{
 		adj = &linear(dem,y+1,x);	//south
-		oss.str("");
-		oss << "Flowdirsfindnorth = " << *(adj->flowDirs().find(north)) << ','
-			<< " flowdirsend = " << *(adj->flowDirs().end()) << '\n';
-		lg.write(debug, oss.str());
 		if(adj->flowDirs().find(north) != adj->flowDirs().end())
 		{
 			adj->setFlowDir(north);
@@ -210,24 +206,51 @@ void Cell::accumulate()
 
 const set<direction>& Cell::flowDirs(int radius, FlowMethod method)
 {
+	ostringstream oss;
+	oss << "Called flowDirs on " << y << ',' << x << '\n';
+	lg.write(debug, oss.str());
+	if(flowDirSet->size()) return *flowDirSet;
+	boost::mutex::scoped_lock lock(flowDirs_mutex);
 	//if this was already calculated, don't do it again
 	if(flowDirSet->size()) return *flowDirSet;
-	
-	{
-		boost::mutex::scoped_lock lock(flowDirs_mutex);
-		static bool called = false;
-		if(called) return *flowDirSet;
-		called = true;
-	}
 
-	//if the search radius goes off the edge of the DEM, flow in that direction
-	if(y<radius) flowDirSet->insert(north);
-	if(y+radius >= cellsY) flowDirSet->insert(south);
-	if(x<radius) flowDirSet->insert(west);
-	if(x+radius >= cellsX) flowDirSet->insert(east);
-	if(flowDirSet->size()) return *flowDirSet;
+	oss.str("");
+	oss << "passed initial check on flowDirs on " << y << ',' << x << '\n';
+	lg.write(debug, oss.str());
 	
-	vector<double> slopes(8,0);
+	//if the search radius goes off the edge of the DEM, flow in that direction
+	oss.str("");
+	if(y<radius)
+	{
+		flowDirSet->insert(north);
+		oss << "Radius " << radius << " on cell " << y << ',' << x <<
+			"falls off the north\n";
+	}
+	if(y+radius >= cellsY)
+	{
+		flowDirSet->insert(south);
+		oss << "Radius " << radius << " on cell " << y << ',' << x <<
+			"falls off the south\n";
+	}
+	if(x<radius)
+	{
+		flowDirSet->insert(west);
+		oss << "Radius " << radius << " on cell " << y << ',' << x <<
+			"falls off the west\n";
+	}
+	if(x+radius >= cellsX)
+	{
+		flowDirSet->insert(east);
+		oss << "Radius " << radius << " on cell " << y << ',' << x <<
+			"falls off the east\n";
+	}
+	if(flowDirSet->size())
+	{
+		lg.write(debug,oss.str());
+		return *flowDirSet;
+	}
+	
+	vector<float> slopes(8,0);
 	switch(method)
 	{
 		//method 1 (rudiger: compare cross slopes)
@@ -279,11 +302,20 @@ const set<direction>& Cell::flowDirs(int radius, FlowMethod method)
 		break;
 	}
 	
-	double max = *max_element(slopes.begin(),slopes.end());
+	float max = *max_element(slopes.begin(),slopes.end());
+	oss.str("");
+	oss << "flowDirs:" << y << ',' << x << " has max slope " << max << '\n';
+	lg.write(debug, oss.str());
 	for(int dir=north; dir<none; dir++)
 	{
+		if(slopes[dir] == -0) slopes[dir]=0;
 		if(slopes[dir] == max)
+		{
 			flowDirSet->insert(intDirection(dir));
+			oss.str("");
+			oss << "flowDirs:" << y << ',' << x << " can flow " << intDirection(dir) << '\n';
+			lg.write(debug, oss.str());
+		}
 	}
 	
 	if(!flowDirSet->size()) lg.write(normal, "flowDirs tried to return an empty set, oops\n");
@@ -291,15 +323,15 @@ const set<direction>& Cell::flowDirs(int radius, FlowMethod method)
 	/*	If the cell is totally flat, ONLY then do we increase the search radius
 		to find the slope.
 	*/
-	if(flowDirSet->size() == 8)
+	/*if(flowDirSet->size() == 8)
 	{
-		ostringstream oss;
+		oss.str("");
 		oss << "flowDirs: Flat cell at " << y << ',' << x << " with elevation "
 			<< height << ". Increasing radius to " << (radius+1) << '\n';
 		lg.write(debug, oss.str());
 		flowDirSet->clear();
-		flowDirs(radius+1,method);
-	}
+		flowDirsNonLock(radius+1,method);
+	}*/
 	return *flowDirSet;
 }
 
