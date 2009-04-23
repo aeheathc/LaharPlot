@@ -46,7 +46,10 @@ T& edge(T *array, int x, int width = -1, int height = -1)
 	static int cellsX = -1, cellsY = -1;
 	if(width != -1) cellsX = width;
 	if(height != -1) cellsY = height;
-	if(x<cellsY) return array[x];	//if we're in the first row: direct map
+	if(x<cellsX) 	//if we're in the first row: direct map
+	{
+		return array[x];
+	}
 	/* for the last row, the edge index plus all of the non-edge cells exceeds
 		all but the last row of the DEM. The excess is mapped to the last row.
 	*/

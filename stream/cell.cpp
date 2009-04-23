@@ -221,26 +221,27 @@ const set<direction>& Cell::flowDirs(int radius, FlowMethod method)
 	lg.write(debug, oss.str());
 	
 	//if the search radius goes off the edge of the DEM, flow in that direction
+	//do the same thing if we're in a no-data zone
 	oss.str("");
-	if(y<radius)
+	if(y<radius || (height<-500 && x>y && y<(Cell::cellsX - x)))
 	{
 		flowDirSet->insert(north);
 		oss << "Radius " << radius << " on cell " << y << ',' << x <<
 			"falls off the north\n";
 	}
-	if(y+radius >= cellsY)
+	if(y+radius >= cellsY || (height<-500 && x<y && y>(Cell::cellsX - x)))
 	{
 		flowDirSet->insert(south);
 		oss << "Radius " << radius << " on cell " << y << ',' << x <<
 			"falls off the south\n";
 	}
-	if(x<radius)
+	if(x<radius || (height<-500 && x<y && y<(Cell::cellsX - x)))
 	{
 		flowDirSet->insert(west);
 		oss << "Radius " << radius << " on cell " << y << ',' << x <<
 			"falls off the west\n";
 	}
-	if(x+radius >= cellsX)
+	if(x+radius >= cellsX || (height<-500 && x>y && y>(Cell::cellsX - x)))
 	{
 		flowDirSet->insert(east);
 		oss << "Radius " << radius << " on cell " << y << ',' << x <<

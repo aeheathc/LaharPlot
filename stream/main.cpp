@@ -216,6 +216,8 @@ int main(int argc, char* argv[])
 	//Done reading DEM...
 	if(fileOut)	writeout.add_thread(new boost::thread(writeSdem));
 	
+	edge(dem,0,Cell::cellsX,Cell::cellsY);	//initialize width and height in function
+
 	//Now do calculations.
 	lg.set(normal) << "\nCalculating...\n";
 
@@ -224,7 +226,6 @@ int main(int argc, char* argv[])
 	boost::thread_group flowTotalCalc;
 	const unsigned long edgeCells = (2*Cell::cellsX + 2*Cell::cellsY - 4);
 	const unsigned long cellsPerThread = edgeCells / threads;
-	edge(dem,0,Cell::cellsX,Cell::cellsY);	//initialize width and height in function
 	for(int thread=0; thread<(threads-1); thread++)
 	{
 		unsigned long firstCell = thread * cellsPerThread;
