@@ -529,14 +529,14 @@
 1186436394 c:\wxwidgets-2.8.9\include\wx\univ\theme.h
 	"wx/string.h"
 
-1239881988 c:\users\tim\documents\codeblocks\laharplot\laharplotmain.h
+1240477939 c:\users\tim\documents\codeblocks\laharplot\laharplotmain.h
 	<wx/progdlg.h>
 	<wx/string.h>
 	"laharPlotApp.h"
 	"GUIFrame.h"
 	"tsv.h"
 
-1239881897 c:\users\tim\documents\codeblocks\laharplot\guiframe.h
+1240474492 c:\users\tim\documents\codeblocks\laharplot\guiframe.h
 	<wx/string.h>
 	<wx/bitmap.h>
 	<wx/image.h>
@@ -861,7 +861,7 @@
 
 1186436452 c:\wxwidgets-2.8.9\include\wx\msw\frame.h
 
-1239882642 source:c:\users\tim\documents\codeblocks\laharplot\guiframe.cpp
+1240474492 source:c:\users\tim\documents\codeblocks\laharplot\guiframe.cpp
 	"wx/wxprec.h"
 	<wx/wx.h>
 	"GUIFrame.h"
@@ -1792,10 +1792,11 @@
 
 1186436452 c:\wxwidgets-2.8.9\include\wx\msw\filedlg.h
 
-1239883096 source:c:\users\tim\documents\codeblocks\laharplot\laharplotmain.cpp
+1240460879 source:c:\users\tim\documents\codeblocks\laharplot\laharplotmain.cpp
 	"wx_pch.h"
 	"laharPlotMain.h"
 	"frameDEMDialog.h"
+	"frameZoneDialog.h"
 	<wx/dcclient.h>
 	<wx/dcmemory.h>
 	<wx/msgdlg.h>
@@ -1825,7 +1826,7 @@
 	<wx/string.h>
 	<wx/progdlg.h>
 
-1239871257 source:c:\users\tim\documents\codeblocks\laharplot\tsv.cpp
+1240469897 source:c:\users\tim\documents\codeblocks\laharplot\tsv.cpp
 	"tsv.h"
 	<wx/msgdlg.h>
 	<string>
@@ -1849,7 +1850,7 @@
 1238039416 c:\users\tim\documents\codeblocks\laharplot\streamoptionsframe.h
 	"GUIFrame.h"
 
-1239931046 source:c:\users\tim\documents\codeblocks\laharplot\framedemdialog.cpp
+1239931770 source:c:\users\tim\documents\codeblocks\laharplot\framedemdialog.cpp
 	<wx/progdlg.h>
 	<wx/filedlg.h>
 	<wx/filename.h>
@@ -1869,4 +1870,16 @@
 
 1211205096 c:\wxwidgets-2.8.9\include\wx\gbsizer.h
 	"wx/sizer.h"
+
+1240470308 source:c:\users\tim\documents\codeblocks\laharplot\framezonedialog.cpp
+	<wx/progdlg.h>
+	<wx/filedlg.h>
+	<wx/filename.h>
+	<wx/msgdlg.h>
+	<wx/process.h>
+	"frameZoneDialog.h"
+
+1240460277 c:\users\tim\documents\codeblocks\laharplot\framezonedialog.h
+	"GUIFrame.h"
+	"laharPlotMain.h"
 

@@ -62,8 +62,11 @@ class GUIFrame : public wxFrame
 		virtual void OnClose( wxCloseEvent& event ){ event.Skip(); }
 		virtual void OnConvertDEM( wxCommandEvent& event ){ event.Skip(); }
 		virtual void OnLoadSdem( wxCommandEvent& event ){ event.Skip(); }
+		virtual void OnRunZone( wxCommandEvent& event ){ event.Skip(); }
+		virtual void OnLoadIZone( wxCommandEvent& event ){ event.Skip(); }
 		virtual void OnQuit( wxCommandEvent& event ){ event.Skip(); }
 		virtual void OnAbout( wxCommandEvent& event ){ event.Skip(); }
+		virtual void OnLeftUp( wxMouseEvent& event ){ event.Skip(); }
 		virtual void OnScrollwheel( wxMouseEvent& event ){ event.Skip(); }
 		virtual void OnPaint( wxPaintEvent& event ){ event.Skip(); }
 		virtual void OnShowStreams( wxCommandEvent& event ){ event.Skip(); }
@@ -103,6 +106,45 @@ class DEMDialog : public wxDialog
 	public:
 		DEMDialog( wxWindow* parent, wxWindowID id = idDEMDialog, const wxString& title = wxT("Convert DEM"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( 486,135 ), long style = wxDEFAULT_DIALOG_STYLE );
 		~DEMDialog();
+	
+};
+
+///////////////////////////////////////////////////////////////////////////////
+/// Class ZoneDialog
+///////////////////////////////////////////////////////////////////////////////
+class ZoneDialog : public wxDialog 
+{
+	private:
+	
+	protected:
+		wxStaticText* basename;
+		wxTextCtrl* SimpleBox;
+		wxButton* BrowseSimple;
+		wxStaticText* Output;
+		wxTextCtrl* OutputBox;
+		wxButton* BrowseOutput;
+		wxStaticText* StreamStart;
+		wxStaticText* volumelabel;
+		wxTextCtrl* VolumeBox;
+		wxButton* cancel;
+		wxButton* run;
+		wxStaticText* startxlabel;
+		wxTextCtrl* startx;
+		wxStaticText* startylabel;
+		wxTextCtrl* starty;
+		wxButton* clickstart;
+		
+		// Virtual event handlers, overide them in your derived class
+		virtual void OnBrowseSimple( wxCommandEvent& event ){ event.Skip(); }
+		virtual void OnBrowseOutput( wxCommandEvent& event ){ event.Skip(); }
+		virtual void OnCancel( wxCommandEvent& event ){ event.Skip(); }
+		virtual void OnRun( wxCommandEvent& event ){ event.Skip(); }
+		virtual void OnShowDEM( wxCommandEvent& event ){ event.Skip(); }
+		
+	
+	public:
+		ZoneDialog( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = wxT("Inundation Zone Mapper"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( 494,212 ), long style = wxDEFAULT_DIALOG_STYLE );
+		~ZoneDialog();
 	
 };
 

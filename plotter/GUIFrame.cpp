@@ -33,6 +33,14 @@ GUIFrame::GUIFrame( wxWindow* parent, wxWindowID id, const wxString& title, cons
 	menuFileLoadSdem = new wxMenuItem( fileMenu, idLoadSdem, wxString( wxT("Load SDEM / Flow Totals") ) , wxT("Load simple DEM file"), wxITEM_NORMAL );
 	fileMenu->Append( menuFileLoadSdem );
 	
+	wxMenuItem* menuFileRunZone;
+	menuFileRunZone = new wxMenuItem( fileMenu, wxID_ANY, wxString( wxT("Inundation Zone Mapper") ) , wxEmptyString, wxITEM_NORMAL );
+	fileMenu->Append( menuFileRunZone );
+	
+	wxMenuItem* menuLoadIZone;
+	menuLoadIZone = new wxMenuItem( fileMenu, wxID_ANY, wxString( wxT("Load Inundation Zone") ) , wxEmptyString, wxITEM_NORMAL );
+	fileMenu->Append( menuLoadIZone );
+	
 	wxMenuItem* menuFileQuit;
 	menuFileQuit = new wxMenuItem( fileMenu, idMenuQuit, wxString( wxT("&Quit") ) + wxT('\t') + wxT("Alt+F4"), wxT("Quit the application"), wxITEM_NORMAL );
 	fileMenu->Append( menuFileQuit );
@@ -93,8 +101,11 @@ GUIFrame::GUIFrame( wxWindow* parent, wxWindowID id, const wxString& title, cons
 	this->Connect( wxEVT_CLOSE_WINDOW, wxCloseEventHandler( GUIFrame::OnClose ) );
 	this->Connect( menuFileConvertDEM->GetId(), wxEVT_COMMAND_MENU_SELECTED, wxCommandEventHandler( GUIFrame::OnConvertDEM ) );
 	this->Connect( menuFileLoadSdem->GetId(), wxEVT_COMMAND_MENU_SELECTED, wxCommandEventHandler( GUIFrame::OnLoadSdem ) );
+	this->Connect( menuFileRunZone->GetId(), wxEVT_COMMAND_MENU_SELECTED, wxCommandEventHandler( GUIFrame::OnRunZone ) );
+	this->Connect( menuLoadIZone->GetId(), wxEVT_COMMAND_MENU_SELECTED, wxCommandEventHandler( GUIFrame::OnLoadIZone ) );
 	this->Connect( menuFileQuit->GetId(), wxEVT_COMMAND_MENU_SELECTED, wxCommandEventHandler( GUIFrame::OnQuit ) );
 	this->Connect( menuHelpAbout->GetId(), wxEVT_COMMAND_MENU_SELECTED, wxCommandEventHandler( GUIFrame::OnAbout ) );
+	SDEMScroll->Connect( wxEVT_LEFT_UP, wxMouseEventHandler( GUIFrame::OnLeftUp ), NULL, this );
 	SDEMScroll->Connect( wxEVT_MOUSEWHEEL, wxMouseEventHandler( GUIFrame::OnScrollwheel ), NULL, this );
 	SDEMScroll->Connect( wxEVT_PAINT, wxPaintEventHandler( GUIFrame::OnPaint ), NULL, this );
 	showStreams->Connect( wxEVT_COMMAND_CHECKBOX_CLICKED, wxCommandEventHandler( GUIFrame::OnShowStreams ), NULL, this );
@@ -107,8 +118,11 @@ GUIFrame::~GUIFrame()
 	this->Disconnect( wxEVT_CLOSE_WINDOW, wxCloseEventHandler( GUIFrame::OnClose ) );
 	this->Disconnect( wxID_ANY, wxEVT_COMMAND_MENU_SELECTED, wxCommandEventHandler( GUIFrame::OnConvertDEM ) );
 	this->Disconnect( wxID_ANY, wxEVT_COMMAND_MENU_SELECTED, wxCommandEventHandler( GUIFrame::OnLoadSdem ) );
+	this->Disconnect( wxID_ANY, wxEVT_COMMAND_MENU_SELECTED, wxCommandEventHandler( GUIFrame::OnRunZone ) );
+	this->Disconnect( wxID_ANY, wxEVT_COMMAND_MENU_SELECTED, wxCommandEventHandler( GUIFrame::OnLoadIZone ) );
 	this->Disconnect( wxID_ANY, wxEVT_COMMAND_MENU_SELECTED, wxCommandEventHandler( GUIFrame::OnQuit ) );
 	this->Disconnect( wxID_ANY, wxEVT_COMMAND_MENU_SELECTED, wxCommandEventHandler( GUIFrame::OnAbout ) );
+	SDEMScroll->Disconnect( wxEVT_LEFT_UP, wxMouseEventHandler( GUIFrame::OnLeftUp ), NULL, this );
 	SDEMScroll->Disconnect( wxEVT_MOUSEWHEEL, wxMouseEventHandler( GUIFrame::OnScrollwheel ), NULL, this );
 	SDEMScroll->Disconnect( wxEVT_PAINT, wxPaintEventHandler( GUIFrame::OnPaint ), NULL, this );
 	showStreams->Disconnect( wxEVT_COMMAND_CHECKBOX_CLICKED, wxCommandEventHandler( GUIFrame::OnShowStreams ), NULL, this );
@@ -168,4 +182,102 @@ DEMDialog::~DEMDialog()
 	m_button3->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( DEMDialog::OnBrowseDEM ), NULL, this );
 	m_button4->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( DEMDialog::OnOutputBrowse ), NULL, this );
 	m_button6->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( DEMDialog::OnConvert ), NULL, this );
+}
+
+ZoneDialog::ZoneDialog( wxWindow* parent, wxWindowID id, const wxString& title, const wxPoint& pos, const wxSize& size, long style ) : wxDialog( parent, id, title, pos, size, style )
+{
+	this->SetSizeHints( wxDefaultSize, wxDefaultSize );
+	
+	wxBoxSizer* bSizer2;
+	bSizer2 = new wxBoxSizer( wxVERTICAL );
+	
+	wxGridBagSizer* gbSizer2;
+	gbSizer2 = new wxGridBagSizer( 0, 0 );
+	gbSizer2->SetFlexibleDirection( wxBOTH );
+	gbSizer2->SetNonFlexibleGrowMode( wxFLEX_GROWMODE_SPECIFIED );
+	
+	basename = new wxStaticText( this, wxID_ANY, wxT("Simple Name"), wxDefaultPosition, wxDefaultSize, 0 );
+	basename->Wrap( -1 );
+	gbSizer2->Add( basename, wxGBPosition( 0, 0 ), wxGBSpan( 1, 1 ), wxALIGN_CENTER_VERTICAL|wxALL, 5 );
+	
+	SimpleBox = new wxTextCtrl( this, wxID_ANY, wxEmptyString, wxDefaultPosition, wxSize( 300,-1 ), 0 );
+	gbSizer2->Add( SimpleBox, wxGBPosition( 0, 1 ), wxGBSpan( 1, 1 ), wxALIGN_CENTER_VERTICAL|wxALL, 5 );
+	
+	BrowseSimple = new wxButton( this, wxID_ANY, wxT("Browse"), wxDefaultPosition, wxDefaultSize, 0 );
+	gbSizer2->Add( BrowseSimple, wxGBPosition( 0, 2 ), wxGBSpan( 1, 1 ), wxALIGN_CENTER_VERTICAL|wxALL, 5 );
+	
+	Output = new wxStaticText( this, wxID_ANY, wxT("Output Directory"), wxDefaultPosition, wxDefaultSize, 0 );
+	Output->Wrap( -1 );
+	gbSizer2->Add( Output, wxGBPosition( 1, 0 ), wxGBSpan( 1, 1 ), wxALIGN_CENTER_VERTICAL|wxALL, 5 );
+	
+	OutputBox = new wxTextCtrl( this, wxID_ANY, wxEmptyString, wxDefaultPosition, wxSize( 300,-1 ), 0 );
+	gbSizer2->Add( OutputBox, wxGBPosition( 1, 1 ), wxGBSpan( 1, 1 ), wxALIGN_CENTER_VERTICAL|wxALL, 5 );
+	
+	BrowseOutput = new wxButton( this, wxID_ANY, wxT("Browse"), wxDefaultPosition, wxDefaultSize, 0 );
+	gbSizer2->Add( BrowseOutput, wxGBPosition( 1, 2 ), wxGBSpan( 1, 1 ), wxALIGN_CENTER_VERTICAL|wxALL, 5 );
+	
+	StreamStart = new wxStaticText( this, wxID_ANY, wxT("Stream Start"), wxDefaultPosition, wxDefaultSize, 0 );
+	StreamStart->Wrap( -1 );
+	gbSizer2->Add( StreamStart, wxGBPosition( 2, 0 ), wxGBSpan( 1, 1 ), wxALIGN_CENTER_VERTICAL|wxALL, 5 );
+	
+	volumelabel = new wxStaticText( this, wxID_ANY, wxT("Volumes: Separated by spaces, eg \"4000 5000\""), wxDefaultPosition, wxDefaultSize, 0 );
+	volumelabel->Wrap( -1 );
+	gbSizer2->Add( volumelabel, wxGBPosition( 3, 0 ), wxGBSpan( 1, 3 ), wxALIGN_CENTER_VERTICAL|wxALL, 5 );
+	
+	VolumeBox = new wxTextCtrl( this, wxID_ANY, wxEmptyString, wxDefaultPosition, wxSize( 400,-1 ), 0 );
+	gbSizer2->Add( VolumeBox, wxGBPosition( 4, 0 ), wxGBSpan( 1, 5 ), wxALIGN_CENTER_VERTICAL|wxALL, 5 );
+	
+	cancel = new wxButton( this, wxID_ANY, wxT("Cancel"), wxDefaultPosition, wxDefaultSize, 0 );
+	gbSizer2->Add( cancel, wxGBPosition( 5, 1 ), wxGBSpan( 1, 1 ), wxALIGN_CENTER_VERTICAL|wxALIGN_RIGHT|wxALL, 5 );
+	
+	run = new wxButton( this, wxID_ANY, wxT("Run"), wxDefaultPosition, wxDefaultSize, 0 );
+	gbSizer2->Add( run, wxGBPosition( 5, 2 ), wxGBSpan( 1, 1 ), wxALIGN_CENTER_VERTICAL|wxALIGN_LEFT|wxALL, 5 );
+	
+	wxGridBagSizer* gbSizer3;
+	gbSizer3 = new wxGridBagSizer( 0, 0 );
+	gbSizer3->SetFlexibleDirection( wxBOTH );
+	gbSizer3->SetNonFlexibleGrowMode( wxFLEX_GROWMODE_SPECIFIED );
+	
+	startxlabel = new wxStaticText( this, wxID_ANY, wxT("x"), wxDefaultPosition, wxDefaultSize, 0 );
+	startxlabel->Wrap( -1 );
+	gbSizer3->Add( startxlabel, wxGBPosition( 0, 0 ), wxGBSpan( 1, 1 ), wxALIGN_CENTER_VERTICAL|wxALL, 5 );
+	
+	startx = new wxTextCtrl( this, wxID_ANY, wxEmptyString, wxDefaultPosition, wxSize( 48,-1 ), 0 );
+	startx->SetMaxLength( 6 ); 
+	gbSizer3->Add( startx, wxGBPosition( 0, 1 ), wxGBSpan( 1, 1 ), wxALIGN_CENTER_VERTICAL|wxALL, 5 );
+	
+	startylabel = new wxStaticText( this, wxID_ANY, wxT("y"), wxDefaultPosition, wxDefaultSize, 0 );
+	startylabel->Wrap( -1 );
+	gbSizer3->Add( startylabel, wxGBPosition( 0, 2 ), wxGBSpan( 1, 1 ), wxALIGN_CENTER_VERTICAL|wxALL, 5 );
+	
+	starty = new wxTextCtrl( this, wxID_ANY, wxEmptyString, wxDefaultPosition, wxSize( 48,-1 ), 0 );
+	starty->SetMaxLength( 6 ); 
+	gbSizer3->Add( starty, wxGBPosition( 0, 3 ), wxGBSpan( 1, 1 ), wxALIGN_CENTER_VERTICAL|wxALL, 5 );
+	
+	clickstart = new wxButton( this, wxID_ANY, wxT("Show DEM"), wxDefaultPosition, wxDefaultSize, 0 );
+	gbSizer3->Add( clickstart, wxGBPosition( 0, 4 ), wxGBSpan( 1, 1 ), wxALIGN_CENTER_VERTICAL|wxALL, 5 );
+	
+	gbSizer2->Add( gbSizer3, wxGBPosition( 2, 1 ), wxGBSpan( 1, 3 ), 0, 5 );
+	
+	bSizer2->Add( gbSizer2, 1, wxEXPAND, 5 );
+	
+	this->SetSizer( bSizer2 );
+	this->Layout();
+	
+	// Connect Events
+	BrowseSimple->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( ZoneDialog::OnBrowseSimple ), NULL, this );
+	BrowseOutput->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( ZoneDialog::OnBrowseOutput ), NULL, this );
+	cancel->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( ZoneDialog::OnCancel ), NULL, this );
+	run->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( ZoneDialog::OnRun ), NULL, this );
+	clickstart->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( ZoneDialog::OnShowDEM ), NULL, this );
+}
+
+ZoneDialog::~ZoneDialog()
+{
+	// Disconnect Events
+	BrowseSimple->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( ZoneDialog::OnBrowseSimple ), NULL, this );
+	BrowseOutput->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( ZoneDialog::OnBrowseOutput ), NULL, this );
+	cancel->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( ZoneDialog::OnCancel ), NULL, this );
+	run->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( ZoneDialog::OnRun ), NULL, this );
+	clickstart->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( ZoneDialog::OnShowDEM ), NULL, this );
 }

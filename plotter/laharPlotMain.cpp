@@ -17,6 +17,7 @@
 
 #include "laharPlotMain.h"
 #include "frameDEMDialog.h"
+#include "frameZoneDialog.h"
 
 #include <wx/dcclient.h>
 #include <wx/dcmemory.h>
@@ -35,7 +36,9 @@ tsv* curSDEM;
 wxBitmap* image;
 wxBitmap* display;
 wxBitmap* stream_single;
-//wxBitmap* streams[100];
+//wxBitmap* streams;
+wxBitmap* zoneImage;
+frameZoneDialog* zoneDlg;
 
 laharPlotFrame::laharPlotFrame(wxFrame *frame)
     : GUIFrame(frame)
@@ -85,6 +88,8 @@ void laharPlotFrame::OnPaint(wxPaintEvent &event)
 			dc.DrawBitmap(*image, 0, 0, true);
 		if (showStreams->IsChecked() && stream_single != NULL)
 			dc.DrawBitmap(*stream_single, 0, 0, true);
+		if (zoneImage != NULL)
+			dc.DrawBitmap(*zoneImage, 0, 0, true);
 	} else {
 		dc.SetUserScale(1,1);
 		if (display != NULL)
@@ -100,6 +105,7 @@ void laharPlotFrame::OnConvertDEM(wxCommandEvent& event)
 
 void laharPlotFrame::OnLoadSdem(wxCommandEvent &event)
 {
+	delete zoneImage;
 	// Open file dialog box
 	wxFileDialog openSdem (this, _("Choose a File"), _(""), _(""), _("SDEM files (*-sdem.tsv)|*-sdem.tsv"), wxOPEN, wxDefaultPosition);
 
@@ -114,6 +120,13 @@ void laharPlotFrame::OnLoadSdem(wxCommandEvent &event)
 
 		SetFile(path.substr(0, path.Length() - 9));
 	}
+}
+
+void laharPlotFrame::OnRunZone(wxCommandEvent &event)
+{
+	delete zoneDlg;
+	zoneDlg = new frameZoneDialog(this);
+	zoneDlg->ShowModal();
 }
 
 void laharPlotFrame::OnShowStreams(wxCommandEvent &event)
@@ -167,6 +180,44 @@ void laharPlotFrame::OnScrollwheel(wxMouseEvent &event)
 	}
 }
 
+void laharPlotFrame::OnLeftUp(wxMouseEvent &event)
+{
+	string file = curSDEM->getFileName();
+	if (zoneDlg == NULL && file != "")
+		zoneDlg = new frameZoneDialog(this);
+
+	if (zoneDlg != NULL && file != "")
+	{
+		long x, y;
+		int vsx, vsy;
+		event.GetPosition(&x, &y);
+		SDEMScroll->GetViewStart(&vsx, &vsy);
+		int newX = (x + vsx) / curZoom;
+		int newY = (y + vsy) / curZoom;
+		zoneDlg->SetStartX(newX);
+		zoneDlg->SetStartY(newY);
+		zoneDlg->Show();
+	}
+}
+
+void laharPlotFrame::OnLoadIZone(wxCommandEvent &event)
+{
+	wxFileDialog openSdem (this, _("Choose a File"), _(""), _(""), _("Zone files (*-zone*.tsv)|*-zone*.tsv"), wxOPEN, wxDefaultPosition);
+
+	// Show dialog box
+	if ( openSdem.ShowModal() == wxID_OK )
+	{
+		// get path and filename
+		wxString path;
+		path.append( openSdem.GetDirectory() );
+		path.append( wxFileName::GetPathSeparator() );
+		path.append( openSdem.GetFilename() );
+
+		dispIZone(path);
+	}
+	SDEMScroll->Refresh();
+}
+
 void laharPlotFrame::SetFile(wxString file)
 {
 	// progress bar
@@ -204,20 +255,17 @@ void laharPlotFrame::SetFile(wxString file)
 	sw = curSDEM->front().size();
 	sh = curSDEM->size();
 
-	if (showStreams->IsChecked())
+	long threshhold;
+	if (streamBoxRadio->GetValue() && streamBox->GetValue().ToLong(&threshhold))
 	{
-		long threshhold;
-		if (streamBoxRadio->GetValue() && streamBox->GetValue().ToLong(&threshhold))
-		{
-			stream_single = new wxBitmap( sw,sh );
-			memdc.SelectObject(*stream_single);
-			dispSingleStream(threshhold, &memdc, &sdemLoadBar, 75, 99.99);
-			wxImage temp = stream_single->ConvertToImage();
-			temp.SetMaskColour(0,0,0);
-			temp.InitAlpha();
-			delete stream_single;
-			stream_single = new wxBitmap(temp);
-		}
+		stream_single = new wxBitmap( sw,sh );
+		memdc.SelectObject(*stream_single);
+		dispSingleStream(threshhold, &memdc, &sdemLoadBar, 75, 99.99);
+		wxImage temp = stream_single->ConvertToImage();
+		temp.SetMaskColour(0,0,0);
+		temp.InitAlpha();
+		delete stream_single;
+		stream_single = new wxBitmap(temp);
 	}
 
 	// unselect bitmap, for safe destruction
@@ -325,7 +373,7 @@ void laharPlotFrame::displaySDEM(wxDC *dc, wxProgressDialog* progDlg, float star
 
 			// move iterator
 			demLine++;
-			progDlg->Update(start + (i * ((end - start) / curSDEM->size())));
+			if (i % 50 == 1) progDlg->Update(start + (i * ((end - start) / curSDEM->size())));
 		}
 	}
 }
@@ -365,7 +413,72 @@ void laharPlotFrame::dispSingleStream(long thresh, wxDC *dc, wxProgressDialog *p
 
 			// move iterator
 			totalLine++;
-			progDlg->Update(start + (i * ((end - start) / curSDEM->size())));
+			if (i % 50 == 1) progDlg->Update(start + (i * ((end - start) / curSDEM->size())));
 		}
 	}
+}
+
+void laharPlotFrame::dispIZone(wxString filename)
+{
+	delete zoneImage;
+	tsv* IZone = new tsv(_(""));
+
+	wxProgressDialog progDlg(_("Loading Inundation Zone"), _(""), 100, this, wxPD_APP_MODAL | wxPD_AUTO_HIDE);
+	progDlg.SetSize(300, 120);
+
+	IZone->setFileName(filename, &progDlg, 0, 50);
+
+	int sw = IZone->front().size();
+	int sh = IZone->size();
+	zoneImage = new wxBitmap(sw,sh);
+
+	wxMemoryDC dc;
+	dc.SelectObject(*zoneImage);
+
+	dc.SetBackground(*wxTRANSPARENT_BRUSH);
+	dc.Clear();
+	// check if ftotal file has been loaded
+    string file = IZone->getFileName();
+    if (file != "")
+    {
+    	list< list<float> >::iterator totalLine = IZone->begin();
+
+		// go through 2 dimensional list
+		for (unsigned int i = 0; i < IZone->size(); i++)
+		{
+			list<float> tl = *totalLine;
+			list<float>::iterator elem = tl.begin();
+			for (unsigned int j = 0; j < tl.size(); j++)
+			{
+				// figure out shade of  point
+				int color;
+				wxColor pixcolor;
+				if (*elem > 0)
+				{
+					pixcolor.Set(255,0,0);
+					dc.SetPen(pixcolor);
+				}
+				else dc.SetPen(*wxTRANSPARENT_PEN);
+
+				dc.DrawPoint(j, i);
+
+				// move iterator
+				elem++;
+			}
+
+			// move iterator
+			totalLine++;
+			progDlg.Update(50 + (i * (49.9 / IZone->size())), _("Drawing Inundation Zone"));
+		}
+	}
+
+	wxImage temp = zoneImage->ConvertToImage();
+	temp.SetMaskColour(0,0,0);
+	temp.InitAlpha();
+	delete zoneImage;
+	zoneImage = new wxBitmap(temp);
+
+	dc.SelectObject(wxNullBitmap);
+	delete IZone;
+	progDlg.Update(100);
 }

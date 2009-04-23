@@ -121,7 +121,7 @@ void tsv::loadtsv(wxProgressDialog* progDlg, float start, float end)
 		}
 
 		k++;
-		progDlg->Update(start + (k * ((end - start) / tsvLen)));
+		if (k % 50 == 1) progDlg->Update(start + (k * ((end - start) / tsvLen)));
 
 		// insert line to sdem
 		if (tsvLine.size() > 0)

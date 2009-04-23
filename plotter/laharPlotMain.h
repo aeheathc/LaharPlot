@@ -29,13 +29,17 @@ class laharPlotFrame: public GUIFrame
         virtual void OnAbout(wxCommandEvent& event);
         virtual void OnConvertDEM(wxCommandEvent& event);
         virtual void OnLoadSdem(wxCommandEvent& event);
+        virtual void OnRunZone(wxCommandEvent& event);
+        virtual void OnLoadIZone(wxCommandEvent& event);
         virtual void OnPaint(wxPaintEvent& event);
         virtual void OnScrollwheel(wxMouseEvent& event);
         virtual void OnShowStreams(wxCommandEvent& event);
         virtual void OnTextEnter(wxCommandEvent& event);
-        void Zoom(float zLevel, wxCoord x, wxCoord y);
+        virtual void OnLeftUp( wxMouseEvent& event );
+		void Zoom(float zLevel, wxCoord x, wxCoord y);
         void displaySDEM(wxDC *dc, wxProgressDialog *progDlg, float start, float end);
         void dispSingleStream(long thresh, wxDC *dc, wxProgressDialog *progDlg, float start, float end);
+        void dispIZone(wxString filename);
 };
 
 #endif // LAHARPLOTMAIN_H

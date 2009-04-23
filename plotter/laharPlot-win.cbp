@@ -64,6 +64,8 @@
 		<Unit filename="WxWizFrame.fbp" />
 		<Unit filename="frameDEMDialog.cpp" />
 		<Unit filename="frameDEMDialog.h" />
+		<Unit filename="frameZoneDialog.cpp" />
+		<Unit filename="frameZoneDialog.h" />
 		<Unit filename="laharPlotApp.cpp" />
 		<Unit filename="laharPlotApp.h" />
 		<Unit filename="laharPlotMain.cpp" />
