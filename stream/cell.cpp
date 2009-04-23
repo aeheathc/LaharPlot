@@ -66,6 +66,8 @@ unsigned long long Cell::getFlowTotal()
 {
 	if(!flowTotalReady)
 	{
+		boost::mutex::scoped_lock lock(getFlowTotal_mutex);	
+		if(flowTotalReady) return flowTotal;
 		accumulate();
 		flowTotalReady = true;
 	}

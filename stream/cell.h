@@ -74,11 +74,10 @@ class Cell
 	const set<direction>& flowDirs(int radius = 1, FlowMethod method = cross);
 	
 	private:
-	bool flowTotalReady;
-	bool accumulated;
+	bool flowTotalReady, accumulated;
 	set<direction>* flowDirSet;	//all possible directions where this cell can flow
 	direction flowDir;	//the direction in which THIS cell flows
-	boost::mutex flowDirs_mutex, accumulate_mutex;
+	boost::mutex flowDirs_mutex, accumulate_mutex, getFlowTotal_mutex;
 };
 
 #endif
