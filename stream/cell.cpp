@@ -206,7 +206,7 @@ void Cell::accumulate()
 	flowTotalReady = true;
 }
 
-const set<direction>& Cell::flowDirs(int radius, FlowMethod method)
+const set<direction>& Cell::flowDirs(FlowMethod method)
 {
 	ostringstream oss;
 	oss << "Called flowDirs on " << y << ',' << x << '\n';
@@ -220,36 +220,61 @@ const set<direction>& Cell::flowDirs(int radius, FlowMethod method)
 	oss << "passed initial check on flowDirs on " << y << ',' << x << '\n';
 	lg.write(debug, oss.str());
 	
-	//if the search radius goes off the edge of the DEM, flow in that direction
-	//do the same thing if we're in a no-data zone
+	//if we're in a no-data zone, flow off the edge of the DEM
 	oss.str("");
-	if(y<radius || (height<-500 && x>y && y<(Cell::cellsX - x)))
+	if(height < -500)
 	{
-		flowDirSet->insert(north);
-		oss << "Radius " << radius << " on cell " << y << ',' << x <<
-			"falls off the north\n";
-	}
-	if(y+radius >= cellsY || (height<-500 && x<y && y>(Cell::cellsX - x)))
-	{
-		flowDirSet->insert(south);
-		oss << "Radius " << radius << " on cell " << y << ',' << x <<
-			"falls off the south\n";
-	}
-	if(x<radius || (height<-500 && x<y && y<(Cell::cellsX - x)))
-	{
-		flowDirSet->insert(west);
-		oss << "Radius " << radius << " on cell " << y << ',' << x <<
-			"falls off the west\n";
-	}
-	if(x+radius >= cellsX || (height<-500 && x>y && y>(Cell::cellsX - x)))
-	{
-		flowDirSet->insert(east);
-		oss << "Radius " << radius << " on cell " << y << ',' << x <<
-			"falls off the east\n";
+		int to[8];		//the distance from the current cell TO each border
+		to[north] = y;
+		to[east]  = cellsX-x-1;
+		to[south] = cellsY-y-1;
+		to[west]  = x;
+
+		if(to[north] < to[west] && to[north] < to[east])
+		{
+			flowDirSet->insert(north);
+			oss << "cell " << y << ',' << x << " with no data goes north\n";
+		}
+		if(to[south] < to[west] && to[south] < to[east])
+		{
+			flowDirSet->insert(south);
+			oss << "cell " << y << ',' << x << " with no data goes south\n";
+		}
+		if(to[west] < to[north] && to[west] < to[south])
+		{
+			flowDirSet->insert(west);
+			oss << "cell " << y << ',' << x << " with no data goes west\n";
+		}
+		if(to[east] < to[north] && to[east] < to[south])
+		{
+			flowDirSet->insert(east);
+			oss << "cell " << y << ',' << x << " with no data goes east\n";
+		}
+		if(to[north] == to[west] && x<(cellsX/2))
+		{
+			flowDirSet->insert(northwest);
+			oss << "cell " << y << ',' << x << " with no data goes northwest\n";
+		}
+		if(to[south] == to[east] && x>=(cellsX/2))
+		{
+			flowDirSet->insert(southeast);
+			oss << "cell " << y << ',' << x << " with no data goes southeast\n";
+		}
+		if(to[south] == to[west] && y>=(cellsY/2))
+		{
+			flowDirSet->insert(southwest);
+			oss << "cell " << y << ',' << x << " with no data goes southwest\n";
+		}
+		if(to[north] == to[east] && y<(cellsY/2))
+		{
+			flowDirSet->insert(northeast);
+			oss << "cell " << y << ',' << x << " with no data goes northeast\n";
+		}
 	}
 	if(flowDirSet->size())
 	{
 		lg.write(debug,oss.str());
+		if(flowDirSet->size()>1) lg.write(debug,"no data, but multiple directions!\n");
 		return *flowDirSet;
 	}
 	
@@ -258,10 +283,10 @@ const set<direction>& Cell::flowDirs(int radius, FlowMethod method)
 	{
 		//method 1 (rudiger: compare cross slopes)
 		case cross:
-		slopes[north]		= linear(dem,y+radius,	x		).height- linear(dem,y-radius,	x		).height;
-		slopes[northeast]	= linear(dem,y+radius,	x-radius).height- linear(dem,y-radius,	x+radius).height;
-		slopes[east]		= linear(dem,y,			x-radius).height- linear(dem,y,			x+radius).height;
-		slopes[southeast]	= linear(dem,y-radius,	x-radius).height- linear(dem,y+radius,	x+radius).height;
+		slopes[north]		= linear(dem,y+1,x	).height - linear(dem,y-1,x  ).height;
+		slopes[northeast]	= linear(dem,y+1,x-1).height - linear(dem,y-1,x+1).height;
+		slopes[east]		= linear(dem,y,	 x-1).height - linear(dem,y,  x+1).height;
+		slopes[southeast]	= linear(dem,y-1,x-1).height - linear(dem,y+1,x+1).height;
 		slopes[south]		= -slopes[north];
 		slopes[southwest]	= -slopes[northeast];
 		slopes[west]		= -slopes[east];
@@ -270,14 +295,14 @@ const set<direction>& Cell::flowDirs(int radius, FlowMethod method)
 	
 		//method 2 (compare radial slopes)
 		case direct:
-		slopes[north]		= linear(dem,y,x).height - linear(dem,y-radius,	x		).height;
-		slopes[northeast]	= linear(dem,y,x).height - linear(dem,y-radius,	x+radius).height;
-		slopes[east]		= linear(dem,y,x).height - linear(dem,y,		x+radius).height;
-		slopes[southeast]	= linear(dem,y,x).height - linear(dem,y+radius,	x+radius).height;
-		slopes[south]		= linear(dem,y,x).height - linear(dem,y+radius,	x		).height;
-		slopes[southwest]	= linear(dem,y,x).height - linear(dem,y+radius,	x-radius).height;
-		slopes[west]		= linear(dem,y,x).height - linear(dem,y,		x-radius).height;
-		slopes[northwest]	= linear(dem,y,x).height - linear(dem,y-radius,	x-radius).height;
+		slopes[north]		= linear(dem,y,x).height - linear(dem,y-1,x  ).height;
+		slopes[northeast]	= linear(dem,y,x).height - linear(dem,y-1,x+1).height;
+		slopes[east]		= linear(dem,y,x).height - linear(dem,y,  x+1).height;
+		slopes[southeast]	= linear(dem,y,x).height - linear(dem,y+1,x+1).height;
+		slopes[south]		= linear(dem,y,x).height - linear(dem,y+1,x  ).height;
+		slopes[southwest]	= linear(dem,y,x).height - linear(dem,y+1,x-1).height;
+		slopes[west]		= linear(dem,y,x).height - linear(dem,y,  x-1).height;
+		slopes[northwest]	= linear(dem,y,x).height - linear(dem,y-1,x-1).height;
 		break;
 	
 		//method 3 (null)
@@ -294,14 +319,14 @@ const set<direction>& Cell::flowDirs(int radius, FlowMethod method)
 		
 		//method 4 (use lowest elevation)
 		case lowest:
-		slopes[north]		= -linear(dem,y-radius,	x		).height;
-		slopes[northeast]	= -linear(dem,y-radius,	x+radius).height;
-		slopes[east]		= -linear(dem,y,		x+radius).height;
-		slopes[southeast]	= -linear(dem,y+radius,	x+radius).height;
-		slopes[south]		= -linear(dem,y+radius,	x		).height;
-		slopes[southwest]	= -linear(dem,y+radius,	x-radius).height;
-		slopes[west]		= -linear(dem,y,		x-radius).height;
-		slopes[northwest]	= -linear(dem,y-radius,	x-radius).height;	
+		slopes[north]		= -linear(dem,y-1,x  ).height;
+		slopes[northeast]	= -linear(dem,y-1,x+1).height;
+		slopes[east]		= -linear(dem,y,  x+1).height;
+		slopes[southeast]	= -linear(dem,y+1,x+1).height;
+		slopes[south]		= -linear(dem,y+1,x  ).height;
+		slopes[southwest]	= -linear(dem,y+1,x-1).height;
+		slopes[west]		= -linear(dem,y,  x-1).height;
+		slopes[northwest]	= -linear(dem,y-1,x-1).height;	
 		break;
 	}
 	
@@ -322,19 +347,6 @@ const set<direction>& Cell::flowDirs(int radius, FlowMethod method)
 	}
 	
 	if(!flowDirSet->size()) lg.write(normal, "flowDirs tried to return an empty set, oops\n");
-	
-	/*	If the cell is totally flat, ONLY then do we increase the search radius
-		to find the slope.
-	*/
-	/*if(flowDirSet->size() == 8)
-	{
-		oss.str("");
-		oss << "flowDirs: Flat cell at " << y << ',' << x << " with elevation "
-			<< height << ". Increasing radius to " << (radius+1) << '\n';
-		lg.write(debug, oss.str());
-		flowDirSet->clear();
-		flowDirsNonLock(radius+1,method);
-	}*/
 	return *flowDirSet;
 }
 
