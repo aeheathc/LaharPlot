@@ -87,9 +87,8 @@ void Cell::accumulate()
 {
 	ostringstream oss;
 	oss << "Calling   accumulate on " << y << ',' << x << ':' << height <<
-		"\n\t" << "where flowTotalReady=" << (flowTotalReady?"true":"false")
-		<< '\n';
-	lg.write(debug, oss.str());
+		" where flowTotalReady=" << (flowTotalReady?"true":"false")	<< '\n';
+	//lg.write(debug, oss.str());
 	
 	if(flowTotalReady) return;
 	
@@ -101,7 +100,7 @@ void Cell::accumulate()
 	
 	oss.str("");
 	oss << "Doing full   accumulate " << y << ',' << x << ':' << height << '\n';
-	lg.write(debug, oss.str());
+	//lg.write(debug, oss.str());
 
 	Cell *adj = NULL;				//an adjacent cell
 	if(y > 0)
@@ -112,7 +111,7 @@ void Cell::accumulate()
 			adj->setFlowDir(south);
 			oss.str("");
 			oss << "Going north to " << adj->y << ',' << adj->x << '\n';
-			lg.write(debug, oss.str());
+			//lg.write(debug, oss.str());
 			flowTotal += adj->getFlowTotal() + 1;
 		}
 	}
@@ -124,7 +123,7 @@ void Cell::accumulate()
 			adj->setFlowDir(southwest);
 			oss.str("");
 			oss << "Going northeast to " << adj->y << ',' << adj->x << '\n';
-			lg.write(debug, oss.str());
+			//lg.write(debug, oss.str());
 			flowTotal += adj->getFlowTotal() + 1;
 		}
 	}
@@ -136,7 +135,7 @@ void Cell::accumulate()
 			adj->setFlowDir(west);
 			oss.str("");
 			oss << "Going east to " << adj->y << ',' << adj->x << '\n';
-			lg.write(debug, oss.str());
+			//lg.write(debug, oss.str());
 			flowTotal += adj->getFlowTotal() + 1;
 		}
 	}
@@ -148,7 +147,7 @@ void Cell::accumulate()
 			adj->setFlowDir(northwest);
 			oss.str("");
 			oss << "Going southeast to " << adj->y << ',' << adj->x << '\n';
-			lg.write(debug, oss.str());
+			//lg.write(debug, oss.str());
 			flowTotal += adj->getFlowTotal() + 1;
 		}
 	}
@@ -160,7 +159,7 @@ void Cell::accumulate()
 			adj->setFlowDir(north);
 			oss.str("");
 			oss << "Going south to " << adj->y << ',' << adj->x << '\n';
-			lg.write(debug, oss.str());
+			//lg.write(debug, oss.str());
 			flowTotal += adj->getFlowTotal() + 1;
 		}	
 	}
@@ -172,7 +171,7 @@ void Cell::accumulate()
 			adj->setFlowDir(northeast);
 			oss.str("");
 			oss << "Going southwest to " << adj->y << ',' << adj->x << '\n';
-			lg.write(debug, oss.str());
+			//lg.write(debug, oss.str());
 			flowTotal += adj->getFlowTotal() + 1;
 		}
 	}
@@ -184,7 +183,7 @@ void Cell::accumulate()
 			adj->setFlowDir(east);
 			oss.str("");
 			oss << "Going west to " << adj->y << ',' << adj->x << '\n';
-			lg.write(debug, oss.str());
+			//lg.write(debug, oss.str());
 			flowTotal += adj->getFlowTotal() + 1;
 		}
 	}
@@ -196,13 +195,13 @@ void Cell::accumulate()
 			adj->setFlowDir(southeast);
 			oss.str("");
 			oss << "Going northwest to " << adj->y << ',' << adj->x << '\n';
-			lg.write(debug, oss.str());
+			//lg.write(debug, oss.str());
 			flowTotal += adj->getFlowTotal() + 1;
 		}
 	}
 	oss.str("");
 	oss << "Done with accumulate on " << y << ',' << x << ':' << height << '\n';
-	lg.write(debug, oss.str());
+	//lg.write(debug, oss.str());
 	flowTotalReady = true;
 }
 
@@ -210,7 +209,7 @@ const set<direction>& Cell::flowDirs(FlowMethod method)
 {
 	ostringstream oss;
 	oss << "Called flowDirs on " << y << ',' << x << '\n';
-	lg.write(debug, oss.str());
+	//lg.write(debug, oss.str());
 	if(flowDirSet->size()) return *flowDirSet;
 	boost::mutex::scoped_lock lock(flowDirs_mutex);
 	//if this was already calculated, don't do it again
@@ -218,7 +217,7 @@ const set<direction>& Cell::flowDirs(FlowMethod method)
 
 	oss.str("");
 	oss << "passed initial check on flowDirs on " << y << ',' << x << '\n';
-	lg.write(debug, oss.str());
+	//lg.write(debug, oss.str());
 	
 	//if we're in a no-data zone, flow off the edge of the DEM
 	oss.str("");
@@ -270,29 +269,18 @@ const set<direction>& Cell::flowDirs(FlowMethod method)
 			flowDirSet->insert(northeast);
 			oss << "cell " << y << ',' << x << " with no data goes northeast\n";
 		}
-	}
-	if(flowDirSet->size())
-	{
-		lg.write(debug,oss.str());
-		if(flowDirSet->size()>1) lg.write(debug,"no data, but multiple directions!\n");
-		return *flowDirSet;
+	
+		if(flowDirSet->size())
+		{
+			if(flowDirSet->size()>1) oss << "no data, but multiple directions!\n";
+			//lg.write(debug,oss.str());
+			return *flowDirSet;
+		}
 	}
 	
 	vector<float> slopes(8,0);
 	switch(method)
 	{
-		//method 1 (rudiger: compare cross slopes)
-		case cross:
-		slopes[north]		= linear(dem,y+1,x	).height - linear(dem,y-1,x  ).height;
-		slopes[northeast]	= linear(dem,y+1,x-1).height - linear(dem,y-1,x+1).height;
-		slopes[east]		= linear(dem,y,	 x-1).height - linear(dem,y,  x+1).height;
-		slopes[southeast]	= linear(dem,y-1,x-1).height - linear(dem,y+1,x+1).height;
-		slopes[south]		= -slopes[north];
-		slopes[southwest]	= -slopes[northeast];
-		slopes[west]		= -slopes[east];
-		slopes[northwest]	= -slopes[southeast];
-		break;
-	
 		//method 2 (compare radial slopes)
 		case direct:
 		slopes[north]		= linear(dem,y,x).height - linear(dem,y-1,x  ).height;
@@ -328,16 +316,29 @@ const set<direction>& Cell::flowDirs(FlowMethod method)
 		slopes[west]		= -linear(dem,y,  x-1).height;
 		slopes[northwest]	= -linear(dem,y-1,x-1).height;	
 		break;
+		
+		//method 1 (rudiger: compare cross slopes)
+		case cross:
+		default:
+		slopes[north]		= linear(dem,y+1,x	).height - linear(dem,y-1,x  ).height;
+		slopes[northeast]	= linear(dem,y+1,x-1).height - linear(dem,y-1,x+1).height;
+		slopes[east]		= linear(dem,y,	 x-1).height - linear(dem,y,  x+1).height;
+		slopes[southeast]	= linear(dem,y-1,x-1).height - linear(dem,y+1,x+1).height;
+		slopes[south]		= -slopes[north];
+		slopes[southwest]	= -slopes[northeast];
+		slopes[west]		= -slopes[east];
+		slopes[northwest]	= -slopes[southeast];
+		break;
 	}
 	
 	float max = *max_element(slopes.begin(),slopes.end());
 	oss.str("");
 	oss << "flowDirs:" << y << ',' << x << " has max slope " << max << '\n';
-	lg.write(debug, oss.str());
+	//lg.write(debug, oss.str());
 	for(int dir=north; dir<none; dir++)
 	{
 		if(slopes[dir] == -0) slopes[dir]=0;
-		if(slopes[dir] == max)
+		if(slopes[dir] >= max)
 		{
 			flowDirSet->insert(intDirection(dir));
 			oss.str("");
@@ -346,7 +347,12 @@ const set<direction>& Cell::flowDirs(FlowMethod method)
 		}
 	}
 	
-	if(!flowDirSet->size()) lg.write(normal, "flowDirs tried to return an empty set, oops\n");
+	if(!flowDirSet->size())
+	{
+		oss.str("");
+		oss << "flowDirs tried to return an empty set for " << y << ',' << x << '\n';
+		lg.write(normal, oss.str());
+	}
 	return *flowDirSet;
 }
 
