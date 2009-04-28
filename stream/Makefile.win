@@ -1,8 +1,5 @@
-boostversion = 1_38
-boostpath = C:/lib/boost/boost_$(boostversion)_0/lib
-boostlibs = "$(boostpath)/libboost_filesystem-mgw34-mt-$(boostversion).lib" "$(boostpath)/libboost_system-mgw34-mt-$(boostversion).lib" "$(boostpath)/libboost_thread-mgw34-mt-$(boostversion).lib" "$(boostpath)/libboost_program_options-mgw34-mt-$(boostversion).lib" "$(boostpath)/libboost_date_time-mgw34-mt-$(boostversion).lib"
-
-paths = -Ic:/lib/gdal/include -Ic:/lib/boost/boost_$(boostversion)_0 -Lc:/lib/gdal/lib
+boostlibs = -lboost_filesystem-mt -lboost_system-mt -lboost_thread-mt -lboost_program_options-mt -lboost_date_time-mt
+paths = -Ic:/lib/gdal/include -Lc:/lib/gdal/lib -Ic:/lib/boost -Lc:/lib/boost/lib
 
 #we don't use all the recommended warns just because the 3rd party libraries
 #generate a ton of warnings due to poor coding standards
@@ -10,16 +7,16 @@ warns = -Wall -Wcast-align -Wcast-qual -Wchar-subscripts -Winline \
 		-Wpointer-arith -Wwrite-strings -Wno-long-long
 
 all: main.cpp main.h cell.o fill.o util.o
-	g++ main.cpp cell.o fill.o util.o -static $(warns) -o stream.exe $(paths) -lgdal $(boostlibs)
+	g++ main.cpp cell.o fill.o util.o $(warns) -static -o stream.exe $(paths) -lgdal $(boostlibs)
 
 fill.o: fill.cpp fill.h util.h
-	g++ fill.cpp -c $(warns) $(paths)
+	g++ fill.cpp -c -static $(warns) $(paths)
 
 cell.o: cell.cpp cell.h util.h
-	g++ cell.cpp -c $(warns) $(paths)
+	g++ cell.cpp -c -static $(warns) $(paths)
 
 util.o: util.h util.cpp
-	g++ util.cpp -c $(warns) $(paths)
+	g++ util.cpp -c -static $(warns) $(paths)
 	
 clean:
 	rm *.o
