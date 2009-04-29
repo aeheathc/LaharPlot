@@ -1,0 +1,32 @@
+#To compile zone.cpp, you will need:
+#  - Boost's compiled Program Options and Thread libraries.
+#  - Supply a path to Boost's root directory.
+#
+#Please note, when compiling on windows using MinGW compiler, you will
+#need to have setup support for POSIX's pthreads, as it is a dependency for
+#Boost's thread library.
+
+# !-!-! Set your current version of Boost !-!-!
+curboostversion = 1_38_0
+
+# !-!-! Set Boost's Path !-!-!
+boostpath = C:/cygwin/usr/include/boost_$(curboostversion)
+
+# !-!-! Set Boost's Libraries !-!-!
+boostlibs = \C:/cygwin/usr/local/lib/libboost_program_options-gcc34-mt.a \C:/cygwin/usr/local/lib/libboost_thread-gcc34-mt.a
+
+
+#----- No changes necessary beyond this point -----
+paths = -I$(boostpath)
+
+exec = zone_win32.exe
+objs = zone.o
+
+all: zone.o
+	g++ zone.o -Wall -o $(exec) $(paths) $(boostlibs)
+
+zone.o: zone.cpp zone.h
+	g++ zone.cpp -c $(paths)
+	
+clean: 
+	rm -f ${exec} ${objs}
