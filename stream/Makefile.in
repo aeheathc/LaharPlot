@@ -113,10 +113,10 @@ PACKAGE_TARNAME = @PACKAGE_TARNAME@
 PACKAGE_VERSION = @PACKAGE_VERSION@
 PATHS = @PATHS@
 PATH_SEPARATOR = @PATH_SEPARATOR@
+PSFLAGS = @PSFLAGS@
 SET_MAKE = @SET_MAKE@
 SHELL = @SHELL@
 STRIP = @STRIP@
-USEPTHREAD = @USEPTHREAD@
 VERSION = @VERSION@
 ac_ct_CC = @ac_ct_CC@
 ac_ct_CXX = @ac_ct_CXX@
@@ -157,7 +157,7 @@ sharedstatedir = @sharedstatedir@
 sysconfdir = @sysconfdir@
 target_alias = @target_alias@
 stream_LDADD = -lboost_filesystem-mt -lboost_system-mt -lboost_thread-mt -lboost_program_options-mt -lboost_date_time-mt -lgdal $(LINUXLIBS)
-stream_LDFLAGS = -static $(USEPTHREAD)
+stream_LDFLAGS = $(PSFLAGS)
 stream_SOURCES = cell.cpp cell.h fill.cpp fill.h main.cpp main.h util.cpp util.h
 all: all-am
 

@@ -113,10 +113,10 @@ PACKAGE_TARNAME = laharplot
 PACKAGE_VERSION = 1.0
 PATHS = -Ic:/lib/boost -Ic:/lib/gdal/include -Lc:/lib/boost/lib -Lc:/lib/gdal/lib
 PATH_SEPARATOR = :
+PSFLAGS = -static
 SET_MAKE = 
 SHELL = /bin/sh
 STRIP = 
-USEPTHREAD = 
 VERSION = 1.0
 ac_ct_CC = gcc
 ac_ct_CXX = g++
@@ -157,7 +157,7 @@ sharedstatedir = ${prefix}/com
 sysconfdir = ${prefix}/etc
 target_alias = 
 stream_LDADD = -lboost_filesystem-mt -lboost_system-mt -lboost_thread-mt -lboost_program_options-mt -lboost_date_time-mt -lgdal $(LINUXLIBS)
-stream_LDFLAGS = -static $(USEPTHREAD)
+stream_LDFLAGS = $(PSFLAGS)
 stream_SOURCES = cell.cpp cell.h fill.cpp fill.h main.cpp main.h util.cpp util.h
 all: all-am
 

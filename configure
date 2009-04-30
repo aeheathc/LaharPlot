@@ -639,7 +639,7 @@ ac_includes_default="\
 
 ac_subst_vars='LTLIBOBJS
 LIBOBJS
-USEPTHREAD
+PSFLAGS
 LINUXLIBS
 PATHS
 EGREP
@@ -734,7 +734,7 @@ with_boost_lib
 with_gdal
 with_gdal_incl
 with_gdal_lib
-with_linuxlibs
+with_linux
 enable_dependency_tracking
 '
       ac_precious_vars='build_alias
@@ -1387,7 +1387,7 @@ Optional Packages:
  --with-gdal directory for gdal. Should have an include folder (named include) and a lib folder.
  --with-gdal-incl directory where gdal headers are
  --with-gdal-lib directory where gdal static library is
- --with-linuxlibs include the options that we wouldn't need on windows: -lcurl -lpng -ljpeg -lgif -pthread
+ --with-linux include the options that we wouldn't need on windows: -lcurl -lpng -ljpeg -lgif -pthread
 
 Some influential environment variables:
   CXX         C++ compiler command
@@ -2367,11 +2367,11 @@ fi
 
 
 
-# Check whether --with-linuxlibs was given.
-if test "${with_linuxlibs+set}" = set; then
-  withval=$with_linuxlibs; linuxlibs="-lcurl -lpng -ljpeg -lgif" usepthread="-pthread"
+# Check whether --with-linux was given.
+if test "${with_linux+set}" = set; then
+  withval=$with_linux; linuxlibs="-lcurl -lpng -ljpeg -lgif" psflags="-pthread"
 else
-  linuxlibs="" usepthread=""
+  linuxlibs="" psflags="-static"
 fi
 
 
@@ -8275,7 +8275,7 @@ PATHS="-I${boost_incl} -I${gdal_incl} -L${boost_lib} -L${gdal_lib}"
 
 LINUXLIBS="${linuxlibs}"
 
-USEPTHREAD="${usepthread}"
+PSFLAGS="${psflags}"
 
 
 cat >confcache <<\_ACEOF

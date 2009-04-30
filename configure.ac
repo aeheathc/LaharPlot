@@ -16,7 +16,7 @@ AC_ARG_WITH(gdal, [ --with-gdal directory for gdal. Should have an include folde
 AC_ARG_WITH(gdal-incl, [ --with-gdal-incl directory where gdal headers are], gdal_incl="${with_gdal_incl}")
 AC_ARG_WITH(gdal-lib, [ --with-gdal-lib directory where gdal static library is], gdal_lib="${with_gdal_lib}")
 
-AC_ARG_WITH(linuxlibs, [ --with-linuxlibs include the options that we wouldn't need on windows: -lcurl -lpng -ljpeg -lgif -pthread], [linuxlibs="-lcurl -lpng -ljpeg -lgif" usepthread="-pthread"], [linuxlibs="" usepthread=""])
+AC_ARG_WITH(linux, [ --with-linux include the options that we wouldn't need on windows: -lcurl -lpng -ljpeg -lgif -pthread], [linuxlibs="-lcurl -lpng -ljpeg -lgif" psflags="-pthread"], [linuxlibs="" psflags="-static"])
 
 # Checks for programs.
 AC_PROG_CXX
@@ -61,6 +61,6 @@ AC_CHECK_FUNCS([pow sqrt])
 AC_CONFIG_FILES([Makefile stream/Makefile zone/Makefile])
 AC_SUBST([PATHS],["-I${boost_incl} -I${gdal_incl} -L${boost_lib} -L${gdal_lib}"])
 AC_SUBST([LINUXLIBS],["${linuxlibs}"])
-AC_SUBST([USEPTHREAD],["${usepthread}"])
+AC_SUBST([PSFLAGS],["${psflags}"])
 
 AC_OUTPUT
