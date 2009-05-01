@@ -1,0 +1,87 @@
+                                  LaharPlot
+                               ---------------
+
+          Copyright 2009: Anthony Heathcoat, Jason Anderson, Tim Root
+                  https://sourceforge.net/projects/laharplot/
+
+*** Overview ***
+----------------
+
+LaharPlot is an application that can calculate and map out the inundation zone
+of a lahar (volcanic mudslide) given an elevation map and some starting
+parameters about the lahar itself.
+
+This program is free software: you can redistribute it and/or modify it under
+the terms of the GNU General Public License as published by the Free Software
+Foundation, either version 3 of the License, or (at your option) any later
+version.
+
+*** Compiling ***
+-----------------
+
+LaharPlot depends on the following external libs:
+- wxWidgets 2.8.10 or greater
+- Boost 1.38.0 or greater
+- GDAL 1.6.0 or greater
+- (linux/etc only) libcurl, libpng, libjpeg, libgif
+
+These all need to be built beforehand, seperately, to compile LaharPlot.
+LaharPlot is built in two steps: the base system, and the GUI.
+
+--- Base System:
+The base system of LaharPlot consists of two command-line utilities -- the
+stream finder (named 'stream') and the inundation zone mapper (named 'zone').
+They can be used alone. They are still required if you decide to use the GUI.
+These are built together using GNU Autotools.
+
+0. Generate the config script
+If there is already a file named "configure" (no extension) then skip this step.
+If there is no config script, or if you run it and it complains about missing
+files, regenerate it with the following command:
+autoreconf
+
+1. Run the config script
+Configure needs to know where to find the libraries Boost and GDAL. The default
+paths will look in standard Linux locations but if you have Boost or GDAL in
+other places, or if you're running any other operating system especially Windows
+in any situation you will need to specify locations. The simple options
+--with-boost and --with-gdal specify Windows-friendly locations i.e. where the
+libs and headers are together. You can specify seperate paths for the headers
+and libs with --with-boost-incl, --with-boost-lib, etc. see './configure --help'
+Additionally, if your platform is not Windows you will probably need to use the
+option --with-linux to link the image libraries, otherwise GDAL will complain.
+Note that running Configure on Windows requires MSYS+MinGW or some other way to
+get Bash on Windows.
+Keep in mind it will search for the Boost libs by their short name, for example
+"libboost_thread-mt.a" NOT "libboost_thread-mgw34-mt-1_30.lib" etc.
+Use --prefix to name an install directory for 'make install'. Especially
+important on Windows because it defaults to a Linux-friendly location.
+A config on Windows might look something like this:
+./configure --with-boost=c:/lib/boost --with-gdal=c:/lib/gdal --prefix=c:/L_Plot
+
+2. Compile
+Type the following:
+make
+
+3. Install
+Type the following:
+make install
+
+X. Recap
+These are the commands used above to build the base system of LaharPlot:
+autoreconf; ./configure; make; make install
+
+--- GUI:
+The GUI is a friendly graphical program through which you can use LaharPlot.
+It is just an interface and still requires the base system alongside it to do
+the calculations.
+The GUI resides in the 'plotter' directory. It was built with the GUI tools in
+the IDE "Code::Blocks" and requires that IDE to efficiently edit it. Currently,
+the only supported way to compile the GUI is also by using Code::Blocks. It will
+eventually be integrated into the same autotools flow as the rest of the
+project. Until then...
+Open the IDE and make sure you correctly configure wxWidgets. The other
+libraries (Boost, GDAL) are not needed here. Then click the build button.
+If you run the GUI outside of the IDE it will want the wxWidgets shared library
+either in the same place or in your PATH. You also need the 2 executables from
+the base system in the same location as the GUI.

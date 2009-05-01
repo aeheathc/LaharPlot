@@ -8,15 +8,15 @@ AC_CONFIG_SRCDIR([zone/zone.cpp], [stream/main.cpp])
 AC_CONFIG_HEADERS([config.h])
 
 # Set library paths provided by user.
-AC_ARG_WITH(boost, [ --with-boost directory for boost. Should include both the boost header folder (named boost) and the boost lib folder.], [boost_incl="${with_boost}" boost_lib="${with_boost}/lib"], [boost_incl="/usr/include" boost_lib="/usr/lib"])
-AC_ARG_WITH(boost-incl, [ --with-boost-incl directory where boost header folder (named boost) is], boost_incl="${with_boost_incl}")
-AC_ARG_WITH(boost-lib, [ --with-boost-lib directory where boost static libraries are], boost_lib="${with_boost_lib}")
+AC_ARG_WITH(boost, [ AC_HELP_STRING([--with-boost=dir], [directory for boost. Should include both the boost header folder (named boost) and the boost lib folder.])], [boost_incl="${with_boost}" boost_lib="${with_boost}/lib"], [boost_incl="/usr/include" boost_lib="/usr/lib"])
+AC_ARG_WITH(boost-incl, [ AC_HELP_STRING([--with-boost-incl=dir], [directory where boost header folder (named boost) is])], boost_incl="${with_boost_incl}")
+AC_ARG_WITH(boost-lib, [ AC_HELP_STRING([--with-boost-lib=dir], [directory where boost static libraries are])], boost_lib="${with_boost_lib}")
 
-AC_ARG_WITH(gdal, [ --with-gdal directory for gdal. Should have an include folder (named include) and a lib folder.], [gdal_incl="${with_gdal}/include" gdal_lib="${with_gdal}/lib"], [gdal_incl="/usr/include" gdal_lib="/usr/lib"])
-AC_ARG_WITH(gdal-incl, [ --with-gdal-incl directory where gdal headers are], gdal_incl="${with_gdal_incl}")
-AC_ARG_WITH(gdal-lib, [ --with-gdal-lib directory where gdal static library is], gdal_lib="${with_gdal_lib}")
+AC_ARG_WITH(gdal, [ AC_HELP_STRING([--with-gdal=dir], [directory for gdal. Should have an include folder (named include) and a lib folder.])], [gdal_incl="${with_gdal}/include" gdal_lib="${with_gdal}/lib"], [gdal_incl="/usr/include" gdal_lib="/usr/lib"])
+AC_ARG_WITH(gdal-incl, [ AC_HELP_STRING([--with-gdal-incl=dir], [directory where gdal headers are])], gdal_incl="${with_gdal_incl}")
+AC_ARG_WITH(gdal-lib, [ AC_HELP_STRING([--with-gdal-lib=dir], [directory where gdal static library is])], gdal_lib="${with_gdal_lib}")
 
-AC_ARG_WITH(linux, [ --with-linux include the options that we wouldn't need on windows: -lcurl -lpng -ljpeg -lgif -pthread], [linuxlibs="-lcurl -lpng -ljpeg -lgif" psflags="-pthread"], [linuxlibs="" psflags="-static"])
+AC_ARG_WITH(linux, [ AC_HELP_STRING([--with-linux], [include the options that we wouldn't need on windows: -lcurl -lpng -ljpeg -lgif -pthread])], [linuxlibs="-lcurl -lpng -ljpeg -lgif" psflags="-pthread"], [linuxlibs="" psflags="-static"])
 
 # Checks for programs.
 AC_PROG_CXX

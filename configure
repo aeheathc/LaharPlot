@@ -1381,13 +1381,17 @@ Optional Features:
 Optional Packages:
   --with-PACKAGE[=ARG]    use PACKAGE [ARG=yes]
   --without-PACKAGE       do not use PACKAGE (same as --with-PACKAGE=no)
- --with-boost directory for boost. Should include both the boost header folder (named boost) and the boost lib folder.
- --with-boost-incl directory where boost header folder (named boost) is
- --with-boost-lib directory where boost static libraries are
- --with-gdal directory for gdal. Should have an include folder (named include) and a lib folder.
- --with-gdal-incl directory where gdal headers are
- --with-gdal-lib directory where gdal static library is
- --with-linux include the options that we wouldn't need on windows: -lcurl -lpng -ljpeg -lgif -pthread
+   --with-boost=dir        directory for boost. Should include both the boost
+                          header folder (named boost) and the boost lib
+                          folder.
+   --with-boost-incl=dir   directory where boost header folder (named boost) is
+   --with-boost-lib=dir    directory where boost static libraries are
+   --with-gdal=dir         directory for gdal. Should have an include folder
+                          (named include) and a lib folder.
+   --with-gdal-incl=dir    directory where gdal headers are
+   --with-gdal-lib=dir     directory where gdal static library is
+   --with-linux            include the options that we wouldn't need on
+                          windows: -lcurl -lpng -ljpeg -lgif -pthread
 
 Some influential environment variables:
   CXX         C++ compiler command
