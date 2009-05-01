@@ -1,22 +1,3 @@
-/* LaharPlot is an application that can calculate and map out the inundation
-   zone of a lahar (volcanic mudslide) given an elevation map and some starting
-   parameters about the lahar itself.
-   Copyright 2009: Anthony Heathcoat, Jason Anderson, Tim Root
-
-   This program is free software: you can redistribute it and/or modify
-   it under the terms of the GNU General Public License as published by
-   the Free Software Foundation, either version 3 of the License, or
-   (at your option) any later version.
-
-   This program is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
-
-   You should have received a copy of the GNU General Public License
-   along with this program.  If not, see <http://www.gnu.org/licenses/>.
-*/
-
 #include <wx/progdlg.h>
 #include <wx/filedlg.h>
 #include <wx/filename.h>
@@ -115,18 +96,21 @@ void frameZoneDialog::OnRun( wxCommandEvent& event )
 			wxProgressDialog zonePBar (_("Running 'zone'"), _(""), 100, this, wxPD_APP_MODAL | wxPD_AUTO_HIDE);
 			zonePBar.SetSize(300, 120);
 			wxProcess* process = wxProcess::Open(opts);
-			process->Redirect();
-			wxInputStream* streamIn = process->GetInputStream();
+			if (process != NULL)
+			{
+				process->Redirect();
+				wxInputStream* streamIn = process->GetInputStream();
+				wxStreamBuffer streamBuf(*streamIn, wxStreamBuffer::read);
 
-			while (process->IsInputOpened()) {
-				streamIn->GetC();
+				while (process->IsInputOpened()) {
+					streamBuf.GetChar();
+				}
+
+				delete process;
+				zonePBar.Update(100);
+
+				EndDialog(1);
 			}
-
-			streamIn->~wxInputStream();
-			delete process;
-			zonePBar.Update(100);
-
-			EndDialog(1);
 		}
 	}
 }

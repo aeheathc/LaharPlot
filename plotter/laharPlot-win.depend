@@ -1792,7 +1792,7 @@
 
 1186436452 c:\wxwidgets-2.8.9\include\wx\msw\filedlg.h
 
-1240460879 source:c:\users\tim\documents\codeblocks\laharplot\laharplotmain.cpp
+1240481467 source:c:\users\tim\documents\codeblocks\laharplot\laharplotmain.cpp
 	"wx_pch.h"
 	"laharPlotMain.h"
 	"frameDEMDialog.h"
@@ -1850,13 +1850,14 @@
 1238039416 c:\users\tim\documents\codeblocks\laharplot\streamoptionsframe.h
 	"GUIFrame.h"
 
-1239931770 source:c:\users\tim\documents\codeblocks\laharplot\framedemdialog.cpp
+1241203558 source:c:\users\tim\documents\codeblocks\laharplot\framedemdialog.cpp
 	<wx/progdlg.h>
 	<wx/filedlg.h>
 	<wx/filename.h>
 	<wx/msgdlg.h>
 	<wx/process.h>
 	<wx/utils.h>
+	<wx/stream.h>
 	"frameDEMDialog.h"
 
 1239861846 c:\users\tim\documents\codeblocks\laharplot\framedemdialog.h
@@ -1871,7 +1872,7 @@
 1211205096 c:\wxwidgets-2.8.9\include\wx\gbsizer.h
 	"wx/sizer.h"
 
-1240470308 source:c:\users\tim\documents\codeblocks\laharplot\framezonedialog.cpp
+1241202780 source:c:\users\tim\documents\codeblocks\laharplot\framezonedialog.cpp
 	<wx/progdlg.h>
 	<wx/filedlg.h>
 	<wx/filename.h>

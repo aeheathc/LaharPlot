@@ -1,28 +1,10 @@
-/* LaharPlot is an application that can calculate and map out the inundation
-   zone of a lahar (volcanic mudslide) given an elevation map and some starting
-   parameters about the lahar itself.
-   Copyright 2009: Anthony Heathcoat, Jason Anderson, Tim Root
-
-   This program is free software: you can redistribute it and/or modify
-   it under the terms of the GNU General Public License as published by
-   the Free Software Foundation, either version 3 of the License, or
-   (at your option) any later version.
-
-   This program is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
-
-   You should have received a copy of the GNU General Public License
-   along with this program.  If not, see <http://www.gnu.org/licenses/>.
-*/
-
 #include <wx/progdlg.h>
 #include <wx/filedlg.h>
 #include <wx/filename.h>
 #include <wx/msgdlg.h>
 #include <wx/process.h>
 #include <wx/utils.h>
+#include <wx/stream.h>
 
 #include "frameDEMDialog.h"
 
@@ -86,62 +68,37 @@ void frameDEMDialog::OnConvert( wxCommandEvent& event )
 		opts.append(_(" -l progress -e"));
 
 		wxProcess* process = wxProcess::Open(opts);
-		process->Redirect();
-		wxInputStream* streamIn = process->GetInputStream();
+		if (process != NULL)
+		{
+			process->Redirect();
+			wxInputStream* streamIn = process->GetInputStream();
+			wxStreamBuffer streamBuf(*streamIn, wxStreamBuffer::read);
 
-		wxProgressDialog streamPBar (_("Running 'stream'"), _("Filling Sinkholes... (May take a while.)"), 100, this, wxPD_APP_MODAL | wxPD_AUTO_HIDE);
-		streamPBar.SetSize(300, 120);
-		wxChar charIn;
-		long xsize, ysize, ft;
+			wxProgressDialog streamPBar (_("Running 'stream'"), _("Filling Sinkholes... (May take a while.)"), 100, this, wxPD_APP_MODAL | wxPD_AUTO_HIDE);
+			streamPBar.SetSize(300, 120);
+			wxChar charIn;
+			long xsize, ysize, ft;
 
-		if (streamIn != NULL) {
-			int eq = 0, i = 0, j = 0, k = 0;
-			while (!streamIn->Eof())
-			{
-				charIn = streamIn->GetC();
-				/*if (charIn == '=')
+			if (streamIn != NULL) {
+				int i = 0, j = 0, k = 0;
+				while (process->IsInputOpened())
 				{
-					eq++;
-					if (eq == 1 || eq == 2)
-					{
-						wxString num = _("");
-						charIn = streamIn->GetC();
-						while (charIn != ',')
-						{
-							num.append(charIn);
-							charIn = streamIn->GetC();
-						}
-						if (eq == 1) num.ToLong(&xsize);
-						else
-						{
-							num.ToLong(&ysize);
-							ft = 2 * (ysize + xsize - 2);
-						}
-					}
-				}*/
-				if (charIn == '-')
-				{
-					i++;
-					if (i == 1) streamPBar.Update(0, _("Building DEM..."));
-				}
-				if (charIn == '.')
-				{
-					j++;
-					if (j == 1) streamPBar.Update(20, _("Finding Flow Direction..."));
-				}
-				if (charIn == '#')
-				{
-					k++;
-					if (k == 1) streamPBar.Update(50,_("Finding Flow Totals..."));
+					charIn = streamBuf.GetChar();
+					if (charIn == '-') i++;
+					else if (charIn == '.') j++;
+					else if (charIn == '#') k++;
+
+					if (i > 0 && j == 0) streamPBar.Update(0, _("Building DEM..."));
+					else if (i > 0 && j < 0) streamPBar.Update(j * (50.0 / i), _("Finding Flow Direction..."));
+					else if (i > 0 && j == i) streamPBar.Update(j * (50.0 / i), _("Finding Flow Totals..."));
 				}
 			}
+			delete process;
+			streamPBar.Update(100);
+
+			//par->SetFile(otbValue);
+
+			EndDialog(1);
 		}
-		streamIn->~wxInputStream();
-		delete process;
-		streamPBar.Update(100);
-
-		//par->SetFile(otbValue);
-
-		EndDialog(1);
 	}
 }
