@@ -343,7 +343,7 @@ void writeFlowTotal()
 	flowTotal->close();
 }
 
-void writeStdOut(Metadata iniData)
+void writeStdOut(Metadata& iniData)
 {
 	cout << fixed;
 	//write Simplified DEM

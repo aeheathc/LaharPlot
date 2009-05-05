@@ -77,6 +77,6 @@ void writeMeta(Metadata& iniData);
 void writeFlowDir();
 void writeFlowTotal();
 
-void writeStdOut(Metadata iniData);
+void writeStdOut(Metadata& iniData);
 
 #endif
