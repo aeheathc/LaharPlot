@@ -72,7 +72,9 @@ void laharPlotFrame::OnQuit(wxCommandEvent &event)
 
 void laharPlotFrame::OnAbout(wxCommandEvent &event)
 {
-    wxMessageBox(_("LaharPlot"), _("Welcome to..."));
+   	static AboutBox* abtbx = new AboutBox(this);
+	abtbx->Show();
+    //wxMessageBox(_("LaharPlot\nVersion 1\nCopyright 2009: Anthony Heathcoat, Jason Anderson, Tim Root\n\nThis program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version."), _("About"));
 }
 
 void laharPlotFrame::OnPaint(wxPaintEvent &event)

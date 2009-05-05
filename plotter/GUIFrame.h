@@ -29,6 +29,8 @@
 #include <wx/stattext.h>
 #include <wx/button.h>
 #include <wx/dialog.h>
+#include <wx/panel.h>
+#include <wx/splitter.h>
 
 ///////////////////////////////////////////////////////////////////////////
 
@@ -145,6 +147,32 @@ class ZoneDialog : public wxDialog
 	public:
 		ZoneDialog( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = wxT("Inundation Zone Mapper"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( 494,212 ), long style = wxDEFAULT_DIALOG_STYLE );
 		~ZoneDialog();
+	
+};
+
+///////////////////////////////////////////////////////////////////////////////
+/// Class AboutBox
+///////////////////////////////////////////////////////////////////////////////
+class AboutBox : public wxFrame 
+{
+	private:
+	
+	protected:
+		wxSplitterWindow* m_splitter1;
+		wxPanel* m_panel4;
+		wxStaticText* m_staticText17;
+		wxScrolledWindow* m_scrolledWindow2;
+		wxStaticText* m_staticText14;
+	
+	public:
+		AboutBox( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = wxT("About"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( 568,400 ), long style = wxDEFAULT_FRAME_STYLE|wxTAB_TRAVERSAL );
+		~AboutBox();
+		void m_splitter1OnIdle( wxIdleEvent& )
+		{
+		m_splitter1->SetSashPosition( 152 );
+		m_splitter1->Disconnect( wxEVT_IDLE, wxIdleEventHandler( AboutBox::m_splitter1OnIdle ), NULL, this );
+		}
+		
 	
 };
 
