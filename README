@@ -102,12 +102,12 @@ inundated area.
 
 --- Command line:
 You need to pass a DEM through the stream finder ("stream"), which will create
-the 3 terrain analysis files, with a common name suffixed by "sdem", "fdir",
-and "ftotal". You then provide the common name for these files to the inundation
-zone mapper ("zone"), along with a lahar starting point (x,y offset in cells
-within the DEM) and volume. This will create a file with the suffix "zoneX"
-where X is the volume you chose. The zoneX file is a TSV file containing a grid
-that is the same size as the DEM and marks the inundated area.
+the 4 terrain analysis files, with a common name suffixed by "sdem.tsv",
+"fdir.tsv", "ftotal.tsv", and ".ini". You then provide the common name for these
+files to the inundation zone mapper ("zone"), along with a lahar starting point
+(x,y offset in cells within the DEM) and volume. This will create a file with
+the suffix "zoneX" where X is the volume you chose. The zoneX file is a TSV file
+containing a grid that is the same size as the DEM and marks the inundated area.
 See the --help output for specifics on how to do all of this. For example:
 stream --help
 Not every option listed is necessary -- just the input/output options. If you
