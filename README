@@ -75,13 +75,40 @@ autoreconf; ./configure; make; make install
 The GUI is a friendly graphical program through which you can use LaharPlot.
 It is just an interface and still requires the base system alongside it to do
 the calculations.
-The GUI resides in the 'plotter' directory. It was built with the GUI tools in
-the IDE "Code::Blocks" and requires that IDE to efficiently edit it. Currently,
-the only supported way to compile the GUI is also by using Code::Blocks. It will
-eventually be integrated into the same autotools flow as the rest of the
-project. Until then...
-Open the IDE and make sure you correctly configure wxWidgets. The other
+The GUI resides in the 'plotter' directory. It was built with the IDE
+"Code::Blocks" and the GUI tool "wxFormBuilder". It requires those tools to
+efficiently edit it. Currently, the only supported way to compile the GUI is
+also by using Code::Blocks. It will eventually be integrated into the same
+autotools flow as the rest of the project. Until then...
+Open Code::Blocks and make sure you correctly configure wxWidgets. The other
 libraries (Boost, GDAL) are not needed here. Then click the build button.
 If you run the GUI outside of the IDE it will want the wxWidgets shared library
 either in the same place or in your PATH. You also need the 2 executables from
 the base system in the same location as the GUI.
+
+*** Usage ***
+-------------
+There are two ways to use LaharPlot -- with a GUI, or through the command line.
+The GUI is not completely stable. For now, don't be suprised if it crashes.
+Fortunately, command line usage is much more reliable.
+
+--- GUI:
+Run the executable named laharPlot. Choose "File > Convert DEM File" to
+load a DEM (primary support is for SDTS files; others may work), then select a
+lahar starting location on the map to open the zone mapper. Enter a volume in
+cubic meters and let it run. It will show you the inundation zone and output a
+TSV file containing a grid that is the same size as the DEM and marks the
+inundated area.
+
+--- Command line:
+You need to pass a DEM through the stream finder ("stream"), which will create
+the 3 terrain analysis files, with a common name suffixed by "sdem", "fdir",
+and "ftotal". You then provide the common name for these files to the inundation
+zone mapper ("zone"), along with a lahar starting point (x,y offset in cells
+within the DEM) and volume. This will create a file with the suffix "zoneX"
+where X is the volume you chose. The zoneX file is a TSV file containing a grid
+that is the same size as the DEM and marks the inundated area.
+See the --help output for specifics on how to do all of this. For example:
+stream --help
+Not every option listed is necessary -- just the input/output options. If you
+miss something, the programs will let you know what they need.
