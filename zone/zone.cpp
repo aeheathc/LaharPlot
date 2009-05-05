@@ -735,7 +735,7 @@ void outputInunGrid(double ** inunGrid, double volume, string outName, bool v) {
     			file << inunGrid[j][i];
     	}
     	if ( i < (yCells - 1) )
-    		file << "\r\n";
+    		file << "\n";
 
     	if (v) {
 
