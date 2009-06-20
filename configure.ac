@@ -23,11 +23,11 @@ AC_PROG_CXX
 
 # Checks for libraries.
 AC_CHECK_LIB([gdal], [GDALClose])
-AC_CHECK_LIB([boost_filesystem-mt], [main])
-AC_CHECK_LIB([boost_system-mt], [main])
-AC_CHECK_LIB([boost_thread-mt], [main])
-AC_CHECK_LIB([boost_program_options-mt], [main])
-AC_CHECK_LIB([boost_date_time-mt], [main])
+AC_CHECK_LIB([boost_filesystem], [main])
+AC_CHECK_LIB([boost_system], [main])
+AC_CHECK_LIB([boost_thread], [main])
+AC_CHECK_LIB([boost_program_options], [main])
+AC_CHECK_LIB([boost_date_time], [main])
 AC_CHECK_LIB([curl], [curl_version_info])
 AC_CHECK_LIB([gif], [DGifOpenFileName])
 AC_CHECK_LIB([jpeg], [jpeg_finish_compress])
