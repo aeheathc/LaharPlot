@@ -53,7 +53,7 @@ option --with-linux to link the image libraries, otherwise GDAL will complain.
 Note that running Configure on Windows requires MSYS+MinGW or some other way to
 get Bash on Windows.
 Keep in mind it will search for the Boost libs by their short name, for example
-"libboost_thread-mt.a" NOT "libboost_thread-mgw34-mt-1_30.lib" etc.
+"libboost_thread.a" NOT "libboost_thread-mgw34-mt-1_30.lib" etc.
 Use --prefix to name an install directory for 'make install'. Especially
 important on Windows because it defaults to a Linux-friendly location.
 A config on Windows might look something like this:
